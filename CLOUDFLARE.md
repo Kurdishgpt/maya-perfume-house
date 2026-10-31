@@ -30,6 +30,19 @@ Set these Worker runtime variables/secrets in Cloudflare:
 - Secret: `SESSION_SECRET`
 - Secret: `GEMINI_API_KEY`
 
+Replit Secrets do not automatically copy to Cloudflare. Set these values on the
+Cloudflare Worker itself, and make sure `VITE_SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` belong to the same Supabase project. The build-time
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` must also point to that project.
+
+After deploying, verify `GET /api/supabase/status` returns
+`{"status":"connected"}` and `GET /api/products` returns HTTP 200. If the
+status says `schema_not_ready`, check the Worker’s Supabase project URL and
+service-role key; the workspace’s Supabase database already contains the
+required catalog tables. If `POST /api/admin/passcode` returns HTTP 403, update
+the Cloudflare Worker secret `ADMIN_PANEL_PASSWORD` to the passcode you intend
+to use. Do not put the passcode or service-role key in this repository.
+
 The Supabase image bucket `maya-product-images` must exist. Keep the service-role
 key private; only the public anon key belongs in the browser build.
 
