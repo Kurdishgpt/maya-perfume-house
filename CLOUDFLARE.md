@@ -9,7 +9,27 @@ dispatches `/api/*` requests to the existing API routes.
 Run commands from the repository root:
 
 - Build: `PORT=22746 BASE_PATH=/ pnpm run build`
-- Deploy: `pnpm exec wrangler deploy`
+- Production deploy: `pnpm run deploy:cloudflare`
+- Branch preview deploy: `pnpm run preview:cloudflare`
+
+The production script runs `wrangler deploy --config wrangler.jsonc --keep-vars`
+using the pinned workspace Wrangler version. `--keep-vars` preserves runtime
+variables configured in the dashboard. Production secrets remain server-side.
+
+If the Cloudflare deployment pipeline currently runs `npx wrangler preview`,
+that is a Preview deployment command. It is appropriate for branch previews;
+the added `previews.vars.NODE_ENV = "development"` configuration supports it
+in Wrangler 4.155.0. For the production pipeline serving the live domain, set
+the deploy command to `pnpm run deploy:cloudflare` instead. Deployment commands
+configured in the Cloudflare dashboard are not changed by editing this file.
+
+The preview block contains no Supabase credentials, passwords, signing secrets,
+or production resources. Configure isolated preview-only resources and secrets
+through Cloudflare's Preview settings before testing database/admin features.
+Without those settings, those features should report unavailable rather than
+access production data. Production `vars.NODE_ENV` remains `production`.
+The Worker entry point, assets, API routing and compatibility settings are
+shared at the top level; they do not belong in the `previews` block.
 
 Vite defaults to port 22746 and the root base path; the deployed Worker
 does not open a listening port. The explicit root Wrangler config prevents
