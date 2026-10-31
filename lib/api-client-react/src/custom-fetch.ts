@@ -327,7 +327,9 @@ export async function customFetch<T = unknown>(
   options: CustomFetchOptions = {},
 ): Promise<T> {
   input = applyBaseUrl(input);
-  const { responseType = "auto", headers: headersInit, ...init } = options;
+  // Generated API calls expect JSON. A static host can return the SPA's HTML
+  // with status 200 for an unavailable endpoint; never treat that as API data.
+  const { responseType = "json", headers: headersInit, ...init } = options;
 
   const method = resolveMethod(input, init.method);
 
