@@ -1,8 +1,9 @@
+import { getRuntimeEnv } from "./runtime-env";
 import type { HillenMaterial } from "./hillenCatalog";
 
 // AI explains verified matches only; it never sets commercial prices or adds invented items.
 export async function explainRawMaterials(query: string, matches: Array<{ material: HillenMaterial; evidence: string }>) {
-  const key = process.env.GEMINI_API_KEY;
+  const key = getRuntimeEnv("GEMINI_API_KEY");
   if (!key) throw new Error("AI explanations are not configured. Verified supplier results are still available.");
   const evidence = matches.map(({ material, evidence: excerpt }) => ({
     id: material.source_id,

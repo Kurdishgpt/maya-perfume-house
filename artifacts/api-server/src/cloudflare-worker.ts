@@ -1,7 +1,8 @@
 import type { Request as ExpressRequest, Response as ExpressResponse } from "express";
 import app from "./cloudflare-app";
+import { runtimeEnvironmentKeys, withRuntimeEnvironment } from "./lib/runtime-env";
 
-interface CloudflareEnvironment {
+type CloudflareEnvironment = Partial<Record<typeof runtimeEnvironmentKeys[number], string>> & {
   ASSETS: {
     fetch(request: Request): Promise<Response>;
   };
@@ -47,19 +48,27 @@ interface WorkerResponse {
   removeHeader(name: string): void;
 }
 
+function logFailure(...values: unknown[]): void {
+  const fields = values[0] && typeof values[0] === "object"
+    ? values[0] as { code?: unknown; err?: { code?: unknown } }
+    : {};
+  const code = fields.code ?? fields.err?.code;
+  const last = values[values.length - 1];
+  // Log only the application event and a bounded error code, never upstream
+  // error messages/objects which can contain URLs or request credentials.
+  console.error("[Maya API]", {
+    event: typeof last === "string" ? last : "API request failed",
+    ...(typeof code === "string" && /^[A-Z0-9_]{1,32}$/.test(code) ? { code } : {}),
+  });
+}
+
 const noOpLogger: RequestLogger = {
   trace: () => {},
   debug: () => {},
   info: () => {},
-  warn: () => {},
-  error: (...values) => console.error(
-    "[Cloudflare API]",
-    values[0] instanceof Error ? values[0].message : String(values[0] ?? "request failed"),
-  ),
-  fatal: (...values) => console.error(
-    "[Cloudflare API]",
-    values[0] instanceof Error ? values[0].message : String(values[0] ?? "request failed"),
-  ),
+  warn: logFailure,
+  error: logFailure,
+  fatal: logFailure,
 };
 
 const expressApp = app as unknown as {
@@ -304,6 +313,17 @@ function createExpressRequest(
   return expressRequest;
 }
 
+export async function handleApiRequest(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  try {
+    return await runExpressRequest(request, url);
+  } catch (error) {
+    if (error instanceof Response) return error;
+    noOpLogger.error("API request failed");
+    return Response.json({ error: "The request could not be completed." }, { status: 500 });
+  }
+}
+
 async function runExpressRequest(request: Request, url: URL): Promise<Response> {
   const body = await parseRequestBody(request);
   const { response, result } = createExpressResponse();
@@ -335,12 +355,7 @@ export default {
     if (url.pathname.startsWith("/api/storage/objects/")) {
       return Response.json({ error: "This legacy image is not available on Cloudflare." }, { status: 404 });
     }
-    try {
-      return await runExpressRequest(request, url);
-    } catch (error) {
-      if (error instanceof Response) return error;
-      noOpLogger.error(error);
-      return Response.json({ error: "The request could not be completed." }, { status: 500 });
-    }
+    const bindings = Object.fromEntries(runtimeEnvironmentKeys.map((name) => [name, env[name]]));
+    return withRuntimeEnvironment(bindings, () => handleApiRequest(request));
   },
 };

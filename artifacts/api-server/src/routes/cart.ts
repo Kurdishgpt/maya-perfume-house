@@ -1,3 +1,4 @@
+import { getRuntimeEnv } from "../lib/runtime-env";
 import { createHash, randomBytes } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { getSupabaseAdmin, isSupabaseConfigured } from "../lib/supabase";
@@ -17,7 +18,7 @@ async function getCart(req: Request, res: Response) {
   if (safeToken !== token) {
     res.cookie(cookieName, safeToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: getRuntimeEnv("NODE_ENV") === "production",
       sameSite: "lax",
       maxAge: 180 * 24 * 60 * 60 * 1000,
       path: "/api/cart",

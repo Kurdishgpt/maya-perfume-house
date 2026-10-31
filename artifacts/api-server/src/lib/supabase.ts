@@ -1,10 +1,13 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { getRuntimeEnv } from "./runtime-env";
 
-let adminClient: SupabaseClient | null = null;
+function serverUrl(): string | undefined {
+  return (getRuntimeEnv("SUPABASE_URL") || getRuntimeEnv("VITE_SUPABASE_URL"))?.trim();
+}
 
 export function getSupabaseConfigIssue(): "missing" | "invalid_url" | null {
-  const url = process.env.VITE_SUPABASE_URL?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const url = serverUrl();
+  const serviceRoleKey = getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY")?.trim();
   if (!url || !serviceRoleKey) return "missing";
   try {
     const parsed = new URL(url);
@@ -20,20 +23,20 @@ export function isSupabaseConfigured(): boolean {
 }
 
 export function getSupabaseAdmin(): SupabaseClient {
-  const url = process.env.VITE_SUPABASE_URL?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const url = serverUrl();
+  const serviceRoleKey = getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY")?.trim();
   if (getSupabaseConfigIssue() !== null || !url || !serviceRoleKey) {
     throw new Error(
-      "Supabase server access is not configured. Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the hosting environment.",
+      "Supabase server access is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the hosting runtime.",
     );
   }
 
-  adminClient ??= createClient(url, serviceRoleKey, {
+  // Do not cache a client carrying credentials from a previous request/deploy.
+  return createClient(url, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
       detectSessionInUrl: false,
     },
   });
-  return adminClient;
 }

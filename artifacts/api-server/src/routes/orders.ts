@@ -1,3 +1,4 @@
+import { getRuntimeEnv } from "../lib/runtime-env";
 import { createHash, randomBytes } from "node:crypto";
 import { Router, type IRouter } from "express";
 import { CreateStoreOrderBody, CreateStoreOrderResponse } from "@workspace/api-zod";
@@ -113,7 +114,7 @@ router.post("/orders", async (req, res): Promise<void> => {
 
     res.cookie("maya_order_access", guestToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: getRuntimeEnv("NODE_ENV") === "production",
       sameSite: "lax",
       maxAge: 30 * 24 * 60 * 60 * 1000,
       path: "/api",

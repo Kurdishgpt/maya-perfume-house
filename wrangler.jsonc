@@ -10,6 +10,7 @@
   "assets": {
     "directory": "artifacts/maya-perfume-shop/dist/public",
     "binding": "ASSETS",
+    "run_worker_first": ["/api", "/api/*"],
     "not_found_handling": "single-page-application"
   },
   "vars": {

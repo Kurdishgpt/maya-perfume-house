@@ -1,3 +1,4 @@
+import { getRuntimeEnv } from "../lib/runtime-env";
 import {
   AutofillFragranceBody,
   AutofillFragranceResponse,
@@ -60,7 +61,7 @@ router.post(
       return;
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getRuntimeEnv("GEMINI_API_KEY");
     if (!apiKey) {
       res.status(503).json({ error: "Fragrance autofill is not configured." });
       return;
