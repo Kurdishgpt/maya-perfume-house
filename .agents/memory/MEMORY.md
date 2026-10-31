@@ -1,1 +1,2 @@
 - [Store data source](store-data-source.md) — Supabase is the live store; legacy PostgreSQL is opt-in for one-time migration only.
+- [Cloudflare Workers runtime](cloudflare-workers-runtime.md) — Keep the edge entry fetch-native; Node servers and Replit sidecars/connectors are unavailable in Workers.
