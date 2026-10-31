@@ -23,6 +23,24 @@ On the Build settings screen, choose **Other (configure manually)** for **Projec
 
 These paths are relative to the repository root. If the dashboard has values that conflict with `netlify.toml`, clear the overrides or set them to the values above.
 
+## Deploy-command failures involving Wrangler
+
+This repository targets Netlify, with static Vite assets and a Node.js Express API packaged as a Netlify Function. It does not contain a Cloudflare Worker entry point, Pages Functions adapter, or Wrangler configuration. `npx wrangler preview` is not part of its installation, build, or deployment scripts. Adding a `previews` block would not deploy the existing Netlify API correctly.
+
+For the configured Netlify site, use the build command in `netlify.toml`, publish `artifacts/maya-perfume-shop/dist/public`, and retain `artifacts/api-server/netlify/functions` as the functions directory. Netlify's Git integration publishes the assets and bundles the API automatically; no separate Wrangler or user deploy command is required. Keep the `/api` rewrites ahead of the SPA fallback so API requests reach Express rather than `index.html`.
+
+The failing `Executing user deploy command: npx wrangler preview` log came from Cloudflare Workers Builds. That dashboard command is configured outside this repository and cannot be overridden by `netlify.toml`.
+
+To use the existing hosting architecture:
+
+1. Open the affected application under Cloudflare Workers & Pages and inspect its build settings for both production and non-production branches. Disconnect that application's repository build integration to stop the incompatible Workers deployment job; do not delete the Worker or alter domains as part of this correction.
+2. Use the existing Netlify project connected to `Kurdishgpt/maya-perfume-house`, branch `main`, with the repository root as its base. Retain the install, build, publish, and functions settings listed above.
+3. Trigger a Netlify Git deploy. There is no separate user deploy command: Netlify publishes the assets and bundles the API from `netlify.toml`. Verify `/api/healthz`, `/api/supabase/status`, and the application flows after deployment.
+
+Replacing `wrangler preview` with `wrangler deploy` alone would still lack the Worker entry point and API runtime adaptation. A Cloudflare deployment would require a deliberate runtime and API adaptation; publishing only the frontend directory to Cloudflare Pages would leave the API unavailable unless a separate compatible backend and routing were configured.
+
+The standalone API command, `pnpm --filter @workspace/api-server start`, starts a persistent Node.js server after its workspace has been built. Static hosting cannot run that process. Netlify uses the existing serverless handler instead of starting that listener.
+
 ## Environment variables
 
 Required for the Supabase-backed production paths:
