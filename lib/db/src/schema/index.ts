@@ -1,3 +1,4 @@
+export * from "./rawMaterials";
 // Export your models here. Add one export per file
 // export * from "./posts";
 //
@@ -17,4 +18,5 @@
 //   export type InsertPost = z.infer<typeof insertPostSchema>;
 //   export type Post = typeof postsTable.$inferSelect;
 
-export {}
+export * from "./products";
+export * from "./contact";

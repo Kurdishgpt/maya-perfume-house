@@ -1,0 +1,1 @@
+- [Store data source](store-data-source.md) — Supabase is the live store; legacy PostgreSQL is opt-in for one-time migration only.
