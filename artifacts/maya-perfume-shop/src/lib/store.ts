@@ -1,9 +1,12 @@
 import type { Product as ApiProduct } from '@workspace/api-client-react';
 import { CONTACT_CONFIG } from '@/lib/contact-config';
+import type { ProductSizeVariant } from '@workspace/api-client-react';
 
 export type Language = 'en' | 'ku' | 'ar';
 export type StoreProduct = ApiProduct & { image_url: string; gallery_images: string[] };
-export type CartLine = { product: StoreProduct; quantity: number; size: number | null };
+export type CartLine = { product: StoreProduct; variant: ProductSizeVariant | null; quantity: number; size: number | null };
+export const cartLinePrice = (line: CartLine) => line.variant?.price ?? line.product.price;
+export const cartLineProductId = (line: CartLine) => line.variant?.supabase_id ?? line.product.supabase_id;
 export type T = (key: string) => string;
 export type CategoryKey = 'all' | 'women' | 'men' | 'unisex' | 'perfect';
 export type FamilyKey = 'all' | 'floral' | 'woody' | 'fruity' | 'oriental';

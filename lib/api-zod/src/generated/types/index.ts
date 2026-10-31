@@ -37,6 +37,8 @@ export * from './product';
 export * from './productCurrency';
 export * from './productInput';
 export * from './productInputCurrency';
+export * from './productSizeInput';
+export * from './productSizeVariant';
 export * from './productUpdate';
 export * from './productUpdateCurrency';
 export * from './rawMaterial';

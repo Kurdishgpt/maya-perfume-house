@@ -580,8 +580,9 @@ button, a, input, textarea, select { -webkit-tap-highlight-color:transparent; }
 .mc-note span { color:#9a7a2c; font-weight:800; font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding-top:2px; }
 .mc-note p { margin:0; color:#2f4b4e; line-height:1.5; }
 .mc-sizes { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; }
-.mc-sizes button { height:46px; border-radius:14px; border:1px solid var(--mc-line); background:var(--mc-white); color:var(--mc-ink); font-size:13px; font-weight:700; cursor:pointer; transition:all .2s; }
+.mc-sizes button { min-height:58px; border-radius:14px; border:1px solid var(--mc-line); background:var(--mc-white); color:var(--mc-ink); font-size:13px; font-weight:700; cursor:pointer; transition:all .2s; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
 .mc-sizes button.is-active { border-color:var(--mc-teal); background:var(--mc-teal); color:var(--mc-champ); box-shadow:0 8px 16px -10px #002D32; }
+.mc-sizes button small { font-size:10px; font-weight:600; opacity:.82; }
 .mc-buy { position:sticky; bottom:calc(var(--mc-nav-h) + var(--mc-safe-b) + 14px); z-index:5; display:grid; grid-template-columns:auto 1fr; gap:10px; margin-top:18px; padding:8px; border-radius:999px; background:#FAF8F1f2; border:1px solid var(--mc-line); box-shadow:0 14px 30px -18px #002D32aa; backdrop-filter:blur(8px); }
 .mc-qty { display:grid; grid-template-columns:40px 34px 40px; align-items:center; height:50px; border-radius:999px; background:var(--mc-white); border:1px solid var(--mc-line); }
 .mc-qty button { height:100%; border:0; background:none; color:var(--mc-teal); display:grid; place-items:center; cursor:pointer; border-radius:999px; }

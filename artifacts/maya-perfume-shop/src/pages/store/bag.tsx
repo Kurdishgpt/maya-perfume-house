@@ -2,6 +2,7 @@ import { Link, useLocation } from 'wouter';
 import { ArrowRight, FlaskConical, Minus, Plus, Trash2 } from 'lucide-react';
 import { PageBar } from '@/components/store/header';
 import { formatMoney, formatTotals } from '@/lib/money';
+import { cartLinePrice } from '@/lib/store';
 import { useStore } from '@/lib/store-context';
 import { EmptyState } from '@/pages/store/wishlist';
 import { useBack } from '@/pages/store/use-back';
@@ -24,11 +25,11 @@ export default function Bag() {
     <PageBar title={t('yourBag')} onBack={back} right={count ? <span className="mc-pill">{count}</span> : undefined}/>
     {!cart.length && !rawMaterialCart.length ? <EmptyState icon="bag" text={t('emptyBag')} action={t('browse')}/> : <div className="mc-bag-layout">
       <ul className="mc-lines">
-        {cart.map(({ product, quantity, size }) => <li key={`${product.id}-${size}`} className="mc-line" data-testid={`line-${product.id}-${size}`}>
+        {cart.map(({ product, variant, quantity, size }) => <li key={`${product.id}-${size}`} className="mc-line" data-testid={`line-${product.id}-${size}`}>
           <Link href={`/product/${product.id}`} className="mc-line-img"><img src={product.image_url || '/images/hero-fragrance.png'} alt={product.title}/></Link>
           <div className="mc-line-copy">
             <Link href={`/product/${product.id}`}><strong>{product.title}</strong></Link>
-            <span dir="ltr">{size ? `${size} ml` : t('sizeUnknown')} · {formatMoney(product.price, product.currency)}</span>
+            <span dir="ltr">{size ? `${size} ml` : t('sizeUnknown')} · {formatMoney(cartLinePrice({ product, variant, quantity, size }), product.currency)}</span>
             <div className="mc-line-actions">
               <div className="mc-qty is-small">
                 <button onClick={() => changeQty(product.id, size, -1)} aria-label="-" data-testid={`button-minus-${product.id}-${size}`}><Minus size={14}/></button>
@@ -38,7 +39,7 @@ export default function Bag() {
               <button className="mc-remove" onClick={() => removeLine(product.id, size)} aria-label={`${t('remove')} ${product.title}`} data-testid={`button-remove-${product.id}-${size}`}><Trash2 size={16}/></button>
             </div>
           </div>
-          <strong className="mc-line-total" dir="ltr">{formatMoney(product.price * quantity, product.currency)}</strong>
+          <strong className="mc-line-total" dir="ltr">{formatMoney(cartLinePrice({ product, variant, quantity, size }) * quantity, product.currency)}</strong>
         </li>)}
         {rawMaterialCart.map((line) => <li key={`raw-${line.id}`} className="mc-line" data-testid={`line-raw-material-${line.id}`}>
           <div className="mc-line-img">{line.image_url ? <img src={line.image_url} alt={line.name}/> : <FlaskConical size={24}/>}</div>

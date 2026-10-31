@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProductCurrency } from './productCurrency';
+import type { ProductSizeVariant } from './productSizeVariant';
 
 export interface Product {
   id: number;
@@ -31,5 +32,7 @@ export interface Product {
   ingredients: string[];
   image_url: string;
   gallery_images: string[];
+  /** @maxItems 5 */
+  size_variants: ProductSizeVariant[];
   created_at: Date;
 }

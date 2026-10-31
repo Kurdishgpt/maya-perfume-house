@@ -4,7 +4,7 @@ import { Check, FlaskConical, MessageCircle, Pencil } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { useCreateStoreOrder, useListRawMaterials, type OrderCheckoutConfirmation } from '@workspace/api-client-react';
 import { PageBar } from '@/components/store/header';
-import { whatsappNumber } from '@/lib/store';
+import { cartLinePrice, cartLineProductId, whatsappNumber } from '@/lib/store';
 import { formatMoney, formatTotals } from '@/lib/money';
 import { useStore } from '@/lib/store-context';
 import { BagSummary } from '@/pages/store/bag';
@@ -42,11 +42,12 @@ export default function Checkout() {
     setOrderError('');
     const items: { product_id: string; quantity: number }[] = [];
     for (const line of cart) {
-      if (!line.product.supabase_id) {
+      const productId = cartLineProductId(line);
+      if (!productId) {
         setOrderError('This fragrance is not linked to the live catalog yet. Refresh the shop and try again.');
         return;
       }
-      items.push({ product_id: line.product.supabase_id, quantity: line.quantity });
+      items.push({ product_id: productId, quantity: line.quantity });
     }
     const rawCatalog = rawMaterialsQuery.data ?? [];
     for (const line of rawMaterialCart) {
@@ -132,7 +133,7 @@ export default function Checkout() {
       <aside className="mc-bag-side">
         <div className="mc-review-card"><h3>{t('orderSummary')}</h3>
            <ul className="mc-mini-lines">
-             {cart.map((l) => <li key={`${l.product.id}-${l.size}`}><img src={l.product.image_url || '/images/hero-fragrance.png'} alt=""/><span><strong>{l.product.title}</strong><small dir="ltr">{l.size ? `${l.size} ml` : t('sizeUnknown')} x {l.quantity}</small></span><em dir="ltr">{formatMoney(l.product.price * l.quantity, l.product.currency)}</em></li>)}
+              {cart.map((l) => <li key={`${l.product.id}-${l.size}`}><img src={l.product.image_url || '/images/hero-fragrance.png'} alt=""/><span><strong>{l.product.title}</strong><small dir="ltr">{l.size ? `${l.size} ml` : t('sizeUnknown')} x {l.quantity}</small></span><em dir="ltr">{formatMoney(cartLinePrice(l) * l.quantity, l.product.currency)}</em></li>)}
              {rawMaterialCart.map((line) => <li key={`raw-${line.id}`}>
                {line.image_url ? <img src={line.image_url} alt=""/> : <span className="mc-mini-material-icon"><FlaskConical size={18}/></span>}
                <span><strong>{line.name}</strong><small dir="ltr">{line.quantity} {line.unit === 'g' ? 'g' : 'item(s)'} · estimate</small></span>

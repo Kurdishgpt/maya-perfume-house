@@ -12,7 +12,7 @@ export function ProductCard({ product, index = 0 }: { product: StoreProduct; ind
   return <article className="mc-card" style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }} data-testid={`card-product-${product.id}`}>
     <Link href={`/product/${product.id}`} className="mc-card-photo" data-testid={`link-product-${product.id}`}>
       <img src={product.image_url || '/images/hero-fragrance.png'} alt={product.title} loading="lazy" decoding="async"/>
-      {product.bottle_size_ml && <span className="mc-card-flag" style={{ top: 'auto', bottom: 8 }} data-testid={`text-size-${product.id}`}>{product.bottle_size_ml} ml</span>}
+      {product.size_variants.length > 0 && <span className="mc-card-flag" style={{ top: 'auto', bottom: 8 }} data-testid={`text-size-${product.id}`}>{product.size_variants.map((variant) => variant.bottle_size_ml).filter((size): size is number => size != null).join(' / ') || '?'} ml</span>}
       {product.stock <= 0 && <span className="mc-card-flag">{t('soldOut')}</span>}
     </Link>
     <div className="mc-card-body">

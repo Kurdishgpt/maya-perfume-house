@@ -6,25 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProductInputCurrency } from './productInputCurrency';
+import type { ProductSizeInput } from './productSizeInput';
 
 export interface ProductInput {
   /** @minLength 1 */
   title: string;
   /** @minLength 1 */
   brand: string;
-  /** @minimum 0 */
-  price: number;
   currency?: ProductInputCurrency;
-  /**
-     * @minimum 1
-     * @maximum 10000
-     * @nullable
-     */
-  bottle_size_ml?: number | null;
-  /** @minimum 0 */
-  stock: number;
-  /** @minLength 1 */
-  sku: string;
   /** @minLength 1 */
   category: string;
   description: string;
@@ -34,4 +23,9 @@ export interface ProductInput {
   ingredients: string[];
   image_url: string;
   gallery_images: string[];
+  /**
+     * @minItems 1
+     * @maxItems 5
+     */
+  size_variants: ProductSizeInput[];
 }

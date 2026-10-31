@@ -211,6 +211,33 @@ export interface RawMaterialResearch {
   warning: string;
 }
 
+export interface ProductSizeVariant {
+  /** @nullable */
+  supabase_id: string | null;
+  /**
+     * @minimum 1
+     * @maximum 10000
+     * @nullable
+     */
+  bottle_size_ml: number | null;
+  /** @minimum 0 */
+  price: number;
+  /** @minimum 0 */
+  stock: number;
+}
+
+export interface ProductSizeInput {
+  /**
+     * @minimum 1
+     * @maximum 10000
+     */
+  bottle_size_ml: number;
+  /** @minimum 0 */
+  price: number;
+  /** @minimum 0 */
+  stock: number;
+}
+
 export type ProductCurrency = typeof ProductCurrency[keyof typeof ProductCurrency];
 
 
@@ -243,6 +270,8 @@ export interface Product {
   ingredients: string[];
   image_url: string;
   gallery_images: string[];
+  /** @maxItems 5 */
+  size_variants: ProductSizeVariant[];
   created_at: string;
 }
 
@@ -259,19 +288,7 @@ export interface ProductInput {
   title: string;
   /** @minLength 1 */
   brand: string;
-  /** @minimum 0 */
-  price: number;
   currency?: ProductInputCurrency;
-  /**
-     * @minimum 1
-     * @maximum 10000
-     * @nullable
-     */
-  bottle_size_ml?: number | null;
-  /** @minimum 0 */
-  stock: number;
-  /** @minLength 1 */
-  sku: string;
   /** @minLength 1 */
   category: string;
   description: string;
@@ -281,6 +298,11 @@ export interface ProductInput {
   ingredients: string[];
   image_url: string;
   gallery_images: string[];
+  /**
+     * @minItems 1
+     * @maxItems 5
+     */
+  size_variants: ProductSizeInput[];
 }
 
 export type ProductUpdateCurrency = typeof ProductUpdateCurrency[keyof typeof ProductUpdateCurrency];
@@ -296,19 +318,7 @@ export interface ProductUpdate {
   title?: string;
   /** @minLength 1 */
   brand?: string;
-  /** @minimum 0 */
-  price?: number;
   currency?: ProductUpdateCurrency;
-  /**
-     * @minimum 1
-     * @maximum 10000
-     * @nullable
-     */
-  bottle_size_ml?: number | null;
-  /** @minimum 0 */
-  stock?: number;
-  /** @minLength 1 */
-  sku?: string;
   /** @minLength 1 */
   category?: string;
   description?: string;
@@ -318,6 +328,11 @@ export interface ProductUpdate {
   ingredients?: string[];
   image_url?: string;
   gallery_images?: string[];
+  /**
+     * @minItems 1
+     * @maxItems 5
+     */
+  size_variants?: ProductSizeInput[];
 }
 
 export type OrderCheckoutInputPaymentMethod = typeof OrderCheckoutInputPaymentMethod[keyof typeof OrderCheckoutInputPaymentMethod];

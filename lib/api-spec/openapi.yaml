@@ -806,6 +806,37 @@ components:
           type: array
           items: { $ref: "#/components/schemas/RawMaterialCandidate" }
         warning: { type: string }
+    ProductSizeVariant:
+      type: object
+      required: [supabase_id, bottle_size_ml, price, stock]
+      properties:
+        supabase_id:
+          type: [string, "null"]
+          format: uuid
+        bottle_size_ml:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 10000
+        price:
+          type: number
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
+    ProductSizeInput:
+      type: object
+      required: [bottle_size_ml, price, stock]
+      properties:
+        bottle_size_ml:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        price:
+          type: number
+          minimum: 0
+        stock:
+          type: integer
+          minimum: 0
     Product:
       type: object
       required:
@@ -826,6 +857,7 @@ components:
         - ingredients
         - image_url
         - gallery_images
+        - size_variants
         - created_at
       properties:
         id:
@@ -876,6 +908,11 @@ components:
           type: array
           items:
             type: string
+        size_variants:
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/ProductSizeVariant"
         created_at:
           type: string
           format: date-time
@@ -884,9 +921,6 @@ components:
       required:
         - title
         - brand
-        - price
-        - stock
-        - sku
         - category
         - description
         - top_notes
@@ -895,6 +929,7 @@ components:
         - ingredients
         - image_url
         - gallery_images
+        - size_variants
       properties:
         title:
           type: string
@@ -902,23 +937,10 @@ components:
         brand:
           type: string
           minLength: 1
-        price:
-          type: number
-          minimum: 0
         currency:
           type: string
           enum: [USD, IQD]
           default: USD
-        bottle_size_ml:
-          type: [integer, "null"]
-          minimum: 1
-          maximum: 10000
-        stock:
-          type: integer
-          minimum: 0
-        sku:
-          type: string
-          minLength: 1
         category:
           type: string
           minLength: 1
@@ -946,6 +968,12 @@ components:
           type: array
           items:
             type: string
+        size_variants:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/ProductSizeInput"
     ProductUpdate:
       type: object
       properties:
@@ -955,22 +983,9 @@ components:
         brand:
           type: string
           minLength: 1
-        price:
-          type: number
-          minimum: 0
         currency:
           type: string
           enum: [USD, IQD]
-        bottle_size_ml:
-          type: [integer, "null"]
-          minimum: 1
-          maximum: 10000
-        stock:
-          type: integer
-          minimum: 0
-        sku:
-          type: string
-          minLength: 1
         category:
           type: string
           minLength: 1
@@ -998,6 +1013,12 @@ components:
           type: array
           items:
             type: string
+        size_variants:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/ProductSizeInput"
     OrderCheckoutInput:
       type: object
       required: [customer_name, phone, shipping_address, city, payment_method, items]

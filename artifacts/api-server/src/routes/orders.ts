@@ -95,13 +95,21 @@ router.post("/orders", async (req, res): Promise<void> => {
     }
     const { data: orderItems, error: itemsError } = await supabase
       .from("order_items")
-      .select("product_name,unit_price,quantity,line_total")
+      .select("product_id,product_name,unit_price,quantity,line_total")
       .eq("order_id", orderId);
     if (itemsError || !orderItems) {
       req.log.error({ code: itemsError?.code }, "Created order items could not be loaded");
       res.status(503).json({ error: "The order was received, but its confirmation could not be loaded. Contact Maya before submitting again." });
       return;
     }
+    const orderedProductIds = [...new Set(orderItems.map((item) => item.product_id).filter((id): id is string => typeof id === "string"))];
+    const { data: orderedProducts, error: productDetailsError } = orderedProductIds.length
+      ? await supabase.from("products").select("id,size_ml").in("id", orderedProductIds)
+      : { data: [], error: null };
+    if (productDetailsError) {
+      req.log.warn({ code: productDetailsError.code }, "Order size labels could not be loaded");
+    }
+    const sizeByProductId = new Map((orderedProducts ?? []).map((product) => [product.id, product.size_ml]));
 
     res.cookie("maya_order_access", guestToken, {
       httpOnly: true,
@@ -120,7 +128,9 @@ router.post("/orders", async (req, res): Promise<void> => {
       payment_status: order.payment_status,
       created_at: order.created_at,
       items: orderItems.map((item) => ({
-        product_name: item.product_name,
+        product_name: sizeByProductId.get(item.product_id) != null
+          ? `${item.product_name} (${sizeByProductId.get(item.product_id)} ml)`
+          : item.product_name,
         unit_price: Number(item.unit_price),
         quantity: item.quantity,
         line_total: Number(item.line_total),

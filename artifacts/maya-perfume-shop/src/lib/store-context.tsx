@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useListProducts, type Product as ApiProduct, type RawMaterial } from '@workspace/api-client-react';
-import { copy, type CartLine, type Language, type StoreProduct, type T } from '@/lib/store';
+import { cartLinePrice, cartLineProductId, copy, type CartLine, type Language, type StoreProduct, type T } from '@/lib/store';
 import { totalByCurrency, type MoneyTotals } from '@/lib/money';
 
 export type RawMaterialBagLine = Pick<RawMaterial, 'id' | 'supabase_id' | 'source_id' | 'name' | 'category' | 'price' | 'currency' | 'unit' | 'image_url'> & { quantity: number };
@@ -20,12 +20,28 @@ type StoreValue = {
 
 const StoreContext = createContext<StoreValue | null>(null);
 const read = <V,>(key: string, fallback: V): V => { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) as V : fallback; } catch { return fallback; } };
+function findVariant(product: StoreProduct, size: number | null, preferredId?: string | null) {
+  const variants = product.size_variants ?? [];
+  if (preferredId) {
+    const exact = variants.find((variant) => variant.supabase_id === preferredId);
+    if (exact) return exact;
+  }
+  return variants.find((variant) => variant.bottle_size_ml === size)
+    ?? variants.find((variant) => variant.supabase_id === product.supabase_id)
+    ?? variants[0]
+    ?? null;
+}
+
 function synchronizeCart(cart: CartLine[], products: StoreProduct[]) {
   return cart.reduce<CartLine[]>((lines, line) => {
-    const product = products.find((p) => p.id === line.product.id) ?? line.product;
-    const existing = lines.find((entry) => entry.product.id === product.id);
+    const product = products.find((p) => p.id === line.product.id)
+      ?? products.find((p) => p.size_variants.some((variant) => variant.supabase_id === line.variant?.supabase_id))
+      ?? line.product;
+    const variant = findVariant(product, line.size, line.variant?.supabase_id);
+    const size = variant?.bottle_size_ml ?? line.size ?? product.bottle_size_ml ?? null;
+    const existing = lines.find((entry) => entry.product.id === product.id && entry.size === size);
     if (existing) existing.quantity += line.quantity;
-    else lines.push({ ...line, product, size: product.bottle_size_ml ?? null });
+    else lines.push({ ...line, product, variant, size });
     return lines;
   }, []);
 }
@@ -52,7 +68,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const liveCart = useMemo(() => synchronizeCart(cart, products), [cart, products]);
   useEffect(() => {
     const items = [
-      ...liveCart.map((line) => ({ product_id: line.product.supabase_id, quantity: line.quantity })),
+      ...liveCart.map((line) => ({ product_id: cartLineProductId(line), quantity: line.quantity })),
       ...rawMaterialCart.map((line) => ({ product_id: line.supabase_id, quantity: line.quantity })),
     ];
     if (items.length === 0) {
@@ -99,14 +115,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     cart: liveCart,
     rawMaterialCart,
     cartSyncState,
-    add: (product, size, quantity = 1) => { setBagPulse((n) => n + 1); setCart((old) => {
+    add: (product, size, quantity = 1) => {
       const item = product as StoreProduct;
-      const found = old.find((l) => l.product.id === item.id);
-      return found ? [...old.filter((l) => l.product.id !== item.id), {
-        product: item, size: item.bottle_size_ml ?? null,
-        quantity: old.filter((l) => l.product.id === item.id).reduce((sum, l) => sum + l.quantity, 0) + quantity,
-      }] : [...old, { product: item, quantity, size }];
-    }); },
+      const variant = findVariant(item, size);
+      const selectedSize = variant?.bottle_size_ml ?? size;
+      setBagPulse((n) => n + 1);
+      setCart((old) => {
+        const found = old.find((line) => line.product.id === item.id && line.size === selectedSize);
+        return found
+          ? old.map((line) => line.product.id === item.id && line.size === selectedSize
+            ? { ...line, product: item, variant, quantity: line.quantity + quantity }
+            : line)
+          : [...old, { product: item, variant, quantity, size: selectedSize }];
+      });
+    },
     addRawMaterial: (material, quantity) => {
       const safeQuantity = Number.isFinite(quantity) ? Math.max(1, Math.round(quantity)) : 1;
       setBagPulse((n) => n + 1);
@@ -131,13 +153,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       line.id === id ? { ...line, quantity: line.quantity + delta } : line,
     ).filter((line) => line.quantity > 0)),
     removeRawMaterial: (id) => setRawMaterialCart((old) => old.filter((line) => line.id !== id)),
-    changeQty: (id, _size, delta) => setCart((old) => synchronizeCart(old, products).map((l) => l.product.id === id ? { ...l, quantity: l.quantity + delta } : l).filter((l) => l.quantity > 0)),
-    removeLine: (id) => setCart((old) => old.filter((l) => l.product.id !== id)),
+    changeQty: (id, size, delta) => setCart((old) => synchronizeCart(old, products)
+      .map((line) => line.product.id === id && line.size === size ? { ...line, quantity: line.quantity + delta } : line)
+      .filter((line) => line.quantity > 0)),
+    removeLine: (id, size) => setCart((old) => old.filter((line) => line.product.id !== id || line.size !== size)),
     clearCart: () => { setCart([]); setRawMaterialCart([]); },
     count: liveCart.reduce((n, l) => n + l.quantity, 0)
       + rawMaterialCart.reduce((n, line) => n + (line.unit === 'g' ? 1 : line.quantity), 0),
     subtotal: totalByCurrency([
-      ...liveCart.map((l) => ({ ...l.product, quantity: l.quantity })),
+      ...liveCart.map((line) => ({ price: cartLinePrice(line), currency: line.product.currency, quantity: line.quantity })),
       ...rawMaterialCart.map(({ price, currency, quantity }) => ({ price, currency, quantity })),
     ]),
     bagPulse,

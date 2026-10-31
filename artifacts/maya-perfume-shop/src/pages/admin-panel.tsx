@@ -31,8 +31,9 @@ import { comparePrices, formatMoney } from "@/lib/money";
 import { getSupabaseClient } from "@/lib/supabase";
 
 const blankDraft = (): Draft => ({
-  title: "", brand: "", price: 0, currency: "USD", bottle_size_ml: null, stock: 0, sku: "", category: "", description: "",
+  title: "", brand: "", currency: "USD", category: "", description: "",
   top_notes: [], heart_notes: [], base_notes: [], ingredients: [], image_url: "", gallery_images: [],
+  size_variants: [{ bottle_size_ml: 50, price: 0, stock: 0 }],
 });
 const navItems: { label: Page; icon: typeof LayoutDashboard }[] = [
   { label: "Dashboard", icon: LayoutDashboard }, { label: "Products", icon: Package },
@@ -95,7 +96,7 @@ export default function AdminPanel() {
   const filtered = useMemo(() => {
     let list = products.filter((p) => {
       const q = search.trim().toLowerCase();
-      const matchesQuery = !q || [p.title, p.brand, p.sku, p.category, ...p.top_notes, ...p.heart_notes, ...p.base_notes].join(" ").toLowerCase().includes(q);
+      const matchesQuery = !q || [p.title, p.brand, p.category, ...p.top_notes, ...p.heart_notes, ...p.base_notes].join(" ").toLowerCase().includes(q);
       return matchesQuery && (category === "All categories" || p.category === category) && (brand === "All brands" || p.brand === brand);
     });
     if (sort === "price-low") list = [...list].sort((a, b) => comparePrices(a, b));
@@ -104,7 +105,7 @@ export default function AdminPanel() {
     if (sort === "stock-high") list = [...list].sort((a, b) => b.stock - a.stock);
     return list;
   }, [products, search, category, brand, sort]);
-  const lowStock = products.filter((p) => p.stock <= lowStockThreshold);
+  const lowStock = products.filter((p) => p.size_variants.some((variant) => variant.stock <= lowStockThreshold));
   const notify = (tone: "success" | "error", text: string) => {
     setToast({ tone, text });
     window.setTimeout(() => setToast(null), 4200);
@@ -130,11 +131,28 @@ export default function AdminPanel() {
     setEditTarget(null); setDraft(initial); setMode(initialMode); setAiQuery(""); setSuggestion(null); setEditorOpen(true);
   };
   const openEdit = (product: Product) => {
-    const { id: _id, created_at: _created, ...input } = product;
+    const input: ProductInput = {
+      title: product.title,
+      brand: product.brand,
+      currency: product.currency,
+      category: product.category,
+      description: product.description,
+      top_notes: product.top_notes,
+      heart_notes: product.heart_notes,
+      base_notes: product.base_notes,
+      ingredients: product.ingredients,
+      image_url: product.image_url,
+      gallery_images: product.gallery_images,
+      size_variants: product.size_variants.map(({ bottle_size_ml, price, stock }) => ({
+        bottle_size_ml: bottle_size_ml ?? 0,
+        price,
+        stock,
+      })),
+    };
     editorSession.current += 1;
     originalDraft.current = JSON.stringify(input);
     setUploading(false);
-    setEditTarget(product); setDraft({ ...input }); setMode("manual"); setSuggestion(null); setEditorOpen(true);
+    setEditTarget(product); setDraft(input); setMode("manual"); setSuggestion(null); setEditorOpen(true);
   };
   const closeEditor = () => {
     if (saving) return;
@@ -150,12 +168,29 @@ export default function AdminPanel() {
     event.preventDefault();
     if (saving || uploading || autofill.isPending) return;
     try {
-      const payload: ProductInput = { ...draft, title: draft.title.trim(), brand: draft.brand.trim(),
-        category: draft.category.trim(), sku: draft.sku.trim(), price: Number(draft.price), stock: Number(draft.stock) };
-      if (!payload.title || !payload.brand || !payload.category || !payload.sku) throw new Error("Enter a name, brand, category and SKU.");
-      if (!Number.isFinite(payload.price) || payload.price < 0) throw new Error("Enter a valid price of zero or more.");
-      if (payload.bottle_size_ml != null && (!Number.isInteger(payload.bottle_size_ml) || payload.bottle_size_ml < 1 || payload.bottle_size_ml > 10000)) throw new Error("Bottle size must be a whole number from 1 to 10,000 ml.");
-      if (!Number.isInteger(payload.stock) || payload.stock < 0) throw new Error("Stock must be a whole number of zero or more.");
+      const payload: ProductInput = {
+        ...draft,
+        title: draft.title.trim(),
+        brand: draft.brand.trim(),
+        category: draft.category.trim(),
+        size_variants: draft.size_variants.map((variant) => ({
+          bottle_size_ml: Number(variant.bottle_size_ml),
+          price: Number(variant.price),
+          stock: Number(variant.stock),
+        })),
+      };
+      if (!payload.title || !payload.brand || !payload.category) throw new Error("Enter a name, brand and category.");
+      if (payload.size_variants.length < 1 || payload.size_variants.length > 5) throw new Error("Add between one and five bottle sizes.");
+      const seenSizes = new Set<number>();
+      for (const variant of payload.size_variants) {
+        if (!Number.isInteger(variant.bottle_size_ml) || variant.bottle_size_ml < 1 || variant.bottle_size_ml > 10000) {
+          throw new Error("Bottle sizes must be whole numbers from 1 to 10,000 ml.");
+        }
+        if (seenSizes.has(variant.bottle_size_ml)) throw new Error("Each bottle size must be unique.");
+        seenSizes.add(variant.bottle_size_ml);
+        if (!Number.isFinite(variant.price) || variant.price < 0) throw new Error("Each size needs a valid price of zero or more.");
+        if (!Number.isInteger(variant.stock) || variant.stock < 0) throw new Error("Each size needs whole-number stock of zero or more.");
+      }
       if (editTarget) await updateProduct.mutateAsync({ id: editTarget.id, data: payload });
       else await createProduct.mutateAsync({ data: payload });
       await refresh();
@@ -177,12 +212,11 @@ export default function AdminPanel() {
     try {
       const result: FragranceSuggestion = await autofill.mutateAsync({ data: { query: aiQuery.trim() } });
       if (session !== editorSession.current) return;
-      const { image_results: _images, sources: _sources, warnings: _warnings, ...fields } = result;
+      const { image_results: _images, sources: _sources, warnings: _warnings, price: _price, ...fields } = result;
       setSuggestion(result);
-      setDraft((current) => ({ ...current, ...fields, price: current.price,
-        currency: current.currency, bottle_size_ml: current.bottle_size_ml,
-        image_url: current.image_url, gallery_images: current.gallery_images,
-        ingredients: current.ingredients, stock: current.stock, sku: current.sku }));
+      setDraft((current) => ({ ...current, ...fields,
+        currency: current.currency, size_variants: current.size_variants,
+        image_url: current.image_url, gallery_images: current.gallery_images }));
       notify("success", "Draft ready. Review the details and select photos below.");
     } catch (error) { if (session === editorSession.current) notify("error", errText(error)); }
   };
@@ -263,15 +297,15 @@ function ProductsView(props: {
     <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="text-[9px] font-semibold uppercase tracking-[.22em] text-[#a9956d]">CURATED CATALOG · {String(products.length).padStart(2,"0")} SCENTS</p><h1 className="mt-2 font-serif text-[34px] leading-tight tracking-[-.02em] text-[#eee9df] md:text-[42px]">The fragrance archive</h1><p className="mt-2 max-w-lg text-[12px] leading-5 text-[#8c9691]">Manage the compositions, materials and stories that shape the Maya Collection.</p></div><button onClick={()=>onCreate("manual")} className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#D9AD45] px-5 text-[10px] font-semibold uppercase tracking-[.13em] text-[#1b201f] transition-colors hover:bg-[#F0D49A]" data-testid="button-add-product"><Plus size={15}/> Add fragrance</button></div>
     <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">{[
       {label:"Live fragrances",value:products.length,detail:"available in the archive",icon:Boxes},
-      {label:"In stock",value:products.filter(p=>p.stock>0).length,detail:"ready for the storefront",icon:Package},
-      {label:"Low stock",value:products.filter(p=>p.stock<=threshold).length,detail:`at or below ${threshold} units`,icon:AlertTriangle},
+       {label:"In stock",value:products.filter(p=>p.size_variants.some(v=>v.stock>0)).length,detail:"ready for the storefront",icon:Package},
+       {label:"Low stock",value:products.filter(p=>p.size_variants.some(v=>v.stock<=threshold)).length,detail:`at or below ${threshold} units`,icon:AlertTriangle},
       {label:"Scent families",value:categories.length,detail:"distinct categories",icon:FlaskConical},
     ].map(({label,value,detail,icon:Icon})=><div key={label} className="rounded-lg border border-white/[.07] bg-[#023f44]/85 p-4 md:p-5" data-testid={`metric-card-${label.toLowerCase().replaceAll(" ","-")}`}><div className="flex items-center justify-between"><span className="text-[9px] uppercase tracking-[.14em] text-[#8c9691]">{label}</span><Icon size={15} className="text-[#a99770]"/></div><div className="mt-3 flex items-end justify-between gap-2"><span className="font-serif text-3xl text-[#e8e4d8]" data-testid={`metric-value-${label.toLowerCase().replaceAll(" ","-")}`}>{value}</span><span className="pb-1 text-right text-[9px] leading-4 text-[#68736e]">{detail}</span></div></div>)}</div>
     <div className="mt-7 overflow-hidden rounded-lg border border-white/[.08] bg-[#023f44]/90">
       <div className="flex flex-col gap-4 border-b border-white/[.07] p-4 md:p-5">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="font-serif text-[22px] text-[#e8e4d9]">Collection</h2><p className="mt-1 text-[10px] text-[#78827d]" data-testid="text-filtered-count">Showing {filtered.length} of {products.length} fragrances</p></div><div className="flex flex-wrap gap-2"><button onClick={()=>onCreate("ai")} className="inline-flex h-9 items-center gap-2 rounded-md border border-[#b49e70]/30 px-3 text-[9px] font-medium uppercase tracking-[.1em] text-[#d5c69f] hover:bg-[#b49e70]/10" data-testid="button-ai-create"><Sparkles size={14}/> AI compose</button><button onClick={()=>onCreate("manual")} className="inline-flex h-9 items-center gap-2 rounded-md border border-white/10 px-3 text-[9px] uppercase tracking-[.1em] text-[#b9bfba] hover:bg-white/[.05]" data-testid="button-manual-create"><Plus size={14}/> Manual entry</button></div></div>
         <div className="grid gap-2 sm:grid-cols-[minmax(180px,1fr)_repeat(3,minmax(125px,.45fr))]">
-          <label className="relative"><span className="sr-only">Search fragrances</span><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#737e79]"/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, note, SKU…" className="h-10 w-full rounded-md border border-white/[.09] bg-[#00262a] pl-9 pr-3 text-xs text-[#e2e0d8] outline-none placeholder:text-[#606b66] focus:border-[#b9a274]/60" data-testid="input-product-search"/></label>
+           <label className="relative"><span className="sr-only">Search fragrances</span><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#737e79]"/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name or note…" className="h-10 w-full rounded-md border border-white/[.09] bg-[#00262a] pl-9 pr-3 text-xs text-[#e2e0d8] outline-none placeholder:text-[#606b66] focus:border-[#b9a274]/60" data-testid="input-product-search"/></label>
           <select value={category} onChange={e=>setCategory(e.target.value)} aria-label="Filter by category" className="h-10 rounded-md border border-white/[.09] bg-[#00262a] px-3 text-[11px] text-[#b8bfba] outline-none focus:border-[#b9a274]/60" data-testid="select-category-filter"><option>All categories</option>{categories.map(c=><option key={c}>{c}</option>)}</select>
           <select value={brand} onChange={e=>setBrand(e.target.value)} aria-label="Filter by brand" className="h-10 rounded-md border border-white/[.09] bg-[#00262a] px-3 text-[11px] text-[#b8bfba] outline-none focus:border-[#b9a274]/60" data-testid="select-brand-filter"><option>All brands</option>{brands.map(b=><option key={b}>{b}</option>)}</select>
           <label className="relative"><ArrowDownUp size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#77817c]"/><select value={sort} onChange={e=>setSort(e.target.value)} aria-label="Sort products" className="h-10 w-full appearance-none rounded-md border border-white/[.09] bg-[#00262a] pl-9 pr-7 text-[11px] text-[#b8bfba] outline-none focus:border-[#b9a274]/60" data-testid="select-product-sort"><option value="featured">Sort: featured</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="stock-low">Stock: low to high</option><option value="stock-high">Stock: high to low</option></select><ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#77817c]"/></label>
@@ -284,11 +318,10 @@ function ProductsView(props: {
         <ul className="grid gap-2 p-3 md:hidden" data-testid="list-products-mobile">
           {filtered.map(p=><li key={p.id} className="flex gap-3 rounded-xl border border-[#D9AD45]/15 bg-[#00262a]/70 p-3" data-testid={`card-admin-product-${p.id}`}>
             <div className="h-[74px] w-[64px] shrink-0 overflow-hidden rounded-lg bg-[#03444a]">{p.image_url?<img src={p.image_url} alt={`${p.title} bottle`} className="h-full w-full object-cover"/>:<div className="grid h-full place-items-center text-[#D9AD45]"><FlaskConical size={17}/></div>}</div>
-            <div className="min-w-0 flex-1"><p className="truncate font-serif text-[17px] text-[#F0D49A]">{p.title}</p><p className="mt-0.5 truncate text-[11px] text-[#9fb3b0]">{p.brand} · <span className="font-mono">{p.sku}</span></p>
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-                <span className="font-mono text-[#e2ddcf]">{money(p.price, p.currency)}</span>
-                {p.bottle_size_ml && <span className="text-[#F0D49A]">{p.bottle_size_ml} ml</span>}
-                <span className={p.stock<=5?"text-[#e5a98f]":"text-[#9fd1c4]"}>{p.stock===0?"Out of Stock":p.stock<=5?"Low Stock":"In Stock"} · {p.stock}</span><span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-[#b9c6c2]">{p.category||"Uncategorized"}</span>
+             <div className="min-w-0 flex-1"><p className="truncate font-serif text-[17px] text-[#F0D49A]">{p.title}</p><p className="mt-0.5 truncate text-[11px] text-[#9fb3b0]">{p.brand}</p>
+               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                 {p.size_variants.map(v=><span key={`${p.id}-${v.bottle_size_ml}`} className="text-[#e2ddcf]">{v.bottle_size_ml ?? "?"} ml · {money(v.price,p.currency)} · stock {v.stock}</span>)}
+                 <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-[#b9c6c2]">{p.category||"Uncategorized"}</span>
               </div>
             </div>
             <div className="flex flex-col gap-1"><button onClick={()=>onEdit(p)} aria-label={`Edit ${p.title}`} className="grid h-10 w-10 place-items-center rounded-lg border border-white/10 text-[#F0D49A]" data-testid={`button-edit-product-mobile-${p.id}`}><Pencil size={15}/></button><button onClick={()=>onDelete(p)} aria-label={`Delete ${p.title}`} className="grid h-10 w-10 place-items-center rounded-lg border border-[#c7796a]/25 text-[#e09a8b]" data-testid={`button-delete-product-mobile-${p.id}`}><Trash2 size={15}/></button></div>
@@ -297,10 +330,10 @@ function ProductsView(props: {
         <div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[900px] border-collapse text-left">
           <thead><tr className="border-b border-white/[.06] text-[9px] uppercase tracking-[.14em] text-[#75807b]"><th className="px-5 py-3 font-medium">Fragrance</th><th className="px-4 py-3 font-medium">Category</th><th className="px-4 py-3 font-medium">Price / Size</th><th className="px-4 py-3 font-medium">Stock status</th><th className="px-4 py-3 font-medium">Olfactory notes</th><th className="px-4 py-3 text-right font-medium">Actions</th></tr></thead>
           <tbody>{filtered.map(p=><tr key={p.id} className="border-b border-white/[.055] transition-colors hover:bg-white/[.018]" data-testid={`row-product-${p.id}`}>
-            <td className="px-5 py-3.5"><div className="flex items-center gap-3"><div className="h-12 w-11 shrink-0 overflow-hidden rounded bg-[#252b29]">{p.image_url?<img src={p.image_url} alt={`${p.title} bottle`} className="h-full w-full object-cover" data-testid={`img-product-${p.id}`}/>:<div className="grid h-full place-items-center text-[#b2a174]"><FlaskConical size={17}/></div>}</div><div className="min-w-0"><p className="max-w-[210px] truncate font-serif text-[15px] text-[#e5e1d7]" data-testid={`text-product-title-${p.id}`}>{p.title}</p><p className="mt-1 text-[10px] text-[#84908a]" data-testid={`text-product-brand-${p.id}`}>{p.brand} <span className="px-1 text-[#4f5955]">·</span><span className="font-mono text-[9px]">{p.sku}</span></p></div></div></td>
+             <td className="px-5 py-3.5"><div className="flex items-center gap-3"><div className="h-12 w-11 shrink-0 overflow-hidden rounded bg-[#252b29]">{p.image_url?<img src={p.image_url} alt={`${p.title} bottle`} className="h-full w-full object-cover" data-testid={`img-product-${p.id}`}/>:<div className="grid h-full place-items-center text-[#b2a174]"><FlaskConical size={17}/></div>}</div><div className="min-w-0"><p className="max-w-[210px] truncate font-serif text-[15px] text-[#e5e1d7]" data-testid={`text-product-title-${p.id}`}>{p.title}</p><p className="mt-1 text-[10px] text-[#84908a]" data-testid={`text-product-brand-${p.id}`}>{p.brand}</p></div></div></td>
             <td className="px-4 py-3.5"><span className="rounded-full border border-white/[.09] px-2.5 py-1 text-[9px] text-[#aeb6af]" data-testid={`text-product-category-${p.id}`}>{p.category||"Uncategorized"}</span></td>
-            <td className="px-4 py-3.5 font-mono text-xs text-[#e2ddcf]" data-testid={`text-product-price-${p.id}`}>{money(p.price, p.currency)}{p.bottle_size_ml && <small className="mt-1 block text-[#9fb3b0]">{p.bottle_size_ml} ml</small>}</td>
-            <td className="px-4 py-3.5"><span className={`inline-flex items-center gap-1.5 text-[11px] ${p.stock<=5?"text-[#d5a087]":"text-[#b7c5b5]"}`} data-testid={`text-product-stock-${p.id}`}><span className={`h-1.5 w-1.5 rounded-full ${p.stock<=5?"bg-[#cf8a70]":"bg-[#92aa91]"}`}/>{p.stock===0?"Out of Stock":p.stock<=5?"Low Stock":"In Stock"} <span className="text-[9px] opacity-75">· {p.stock} units</span></span></td>
+             <td className="px-4 py-3.5 font-mono text-[10px] text-[#e2ddcf]" data-testid={`text-product-price-${p.id}`}><div className="space-y-1">{p.size_variants.map(v=><div key={`${p.id}-${v.bottle_size_ml}`}>{v.bottle_size_ml ?? "?"} ml · {money(v.price,p.currency)}</div>)}</div></td>
+             <td className="px-4 py-3.5"><div className="space-y-1" data-testid={`text-product-stock-${p.id}`}>{p.size_variants.map(v=><span key={`${p.id}-${v.bottle_size_ml}`} className={`block text-[10px] ${v.stock<=5?"text-[#d5a087]":"text-[#b7c5b5]"}`}>{v.bottle_size_ml ?? "?"} ml · {v.stock===0?"Out":v.stock<=5?"Low":"In stock"} · {v.stock} units</span>)}</div></td>
             <td className="max-w-[235px] px-4 py-3.5"><div className="flex flex-wrap gap-1" data-testid={`text-product-notes-${p.id}`}>{[...p.top_notes,...p.heart_notes,...p.base_notes].slice(0,3).map((n,i)=><span key={`${n}-${i}`} className="max-w-[100px] truncate rounded bg-[#282f2e] px-2 py-1 text-[9px] text-[#aab2aa]">{n}</span>)}{p.top_notes.length+p.heart_notes.length+p.base_notes.length>3&&<span className="px-1 py-1 text-[9px] text-[#7c8681]">+{p.top_notes.length+p.heart_notes.length+p.base_notes.length-3}</span>}</div></td>
             <td className="px-4 py-3.5"><div className="flex justify-end gap-1"><button onClick={()=>onEdit(p)} aria-label={`Edit ${p.title}`} className="grid h-8 w-8 place-items-center rounded text-[#9da7a0] hover:bg-white/[.07] hover:text-[#e6d6ae]" data-testid={`button-edit-product-${p.id}`}><Pencil size={14}/></button><button onClick={()=>onDelete(p)} aria-label={`Delete ${p.title}`} className="grid h-8 w-8 place-items-center rounded text-[#89928d] hover:bg-[#a9574d]/15 hover:text-[#d5897b]" data-testid={`button-delete-product-${p.id}`}><Trash2 size={14}/></button></div></td>
           </tr>)}</tbody>
@@ -317,7 +350,7 @@ function DashboardView({products,lowStock,threshold,onProducts,onCreate,onSync}:
     <div className="mt-6 grid gap-5 xl:grid-cols-[1.35fr_.65fr]"><div className="rounded-lg border border-white/[.07] bg-[#023f44] p-5 md:p-6"><div className="flex items-start justify-between"><div><p className="text-[9px] uppercase tracking-[.17em] text-[#a9956d]">Recent collection</p><h2 className="mt-2 font-serif text-2xl text-[#e6e1d6]">The latest compositions</h2></div><button onClick={onProducts} className="text-[9px] uppercase tracking-[.13em] text-[#c8b687] hover:text-[#e5d2a3]" data-testid="button-dashboard-all-products">View archive <ArrowRight size={12} className="ml-1 inline"/></button></div>{products.length? <div className="mt-5 divide-y divide-white/[.06]">{[...products].slice(0,5).map(p=><div key={p.id} className="flex items-center gap-3 py-3" data-testid={`dashboard-product-${p.id}`}><div className="grid h-10 w-9 shrink-0 place-items-center overflow-hidden rounded bg-[#282f2d] text-[#b2a174]">{p.image_url?<img src={p.image_url} alt="" className="h-full w-full object-cover"/>:<FlaskConical size={16}/>}</div><div className="min-w-0 flex-1"><p className="truncate font-serif text-[14px] text-[#dedbd1]" data-testid={`dashboard-title-${p.id}`}>{p.title}</p><p className="mt-1 truncate text-[10px] text-[#818c86]">{p.brand} · {p.category}{p.bottle_size_ml ? ` · ${p.bottle_size_ml} ml` : ""}</p></div><span className="font-mono text-[11px] text-[#c9c2af]">{money(p.price, p.currency)}</span></div>)}</div>:<div className="py-12 text-center text-xs text-[#84908a]" data-testid="state-dashboard-empty">Your first composition will find its place here.</div>}</div>
       <div className="flex flex-col gap-5"><div className="rounded-lg border border-[#b99e6e]/20 bg-[#b99e6e]/[.045] p-5"><p className="text-[9px] uppercase tracking-[.16em] text-[#c1ad7f]">Storefront connection</p><div className="mt-4 flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-full border border-[#8ea98f]/20 bg-[#8ea98f]/10 text-[#adc3a8]"><Check size={16}/></span><div><p className="text-sm text-[#e2dfd5]">Catalog is connected</p><p className="mt-1 text-[10px] text-[#929a91]">{products.length} fragrances available to sync</p></div></div><button onClick={onSync} className="mt-5 w-full rounded border border-[#b99e6e]/25 py-2.5 text-[9px] uppercase tracking-[.13em] text-[#d4c49c] hover:bg-[#b99e6e]/10" data-testid="button-dashboard-sync">Review sync status <ArrowRight size={12} className="ml-1 inline"/></button></div><div className="rounded-lg border border-white/[.07] bg-[#023f44] p-5"><div className="flex justify-between"><div><p className="text-[9px] uppercase tracking-[.16em] text-[#a9956d]">One more fragrance?</p><h3 className="mt-2 font-serif text-xl text-[#e4e0d5]">Add to the archive</h3></div><FlaskConical size={18} className="text-[#aa986e]"/></div><p className="mt-2 text-[11px] leading-5 text-[#87918b]">Give a new composition its notes, materials and place in the collection.</p><button onClick={onCreate} className="mt-4 inline-flex items-center gap-2 text-[9px] uppercase tracking-[.13em] text-[#d3bf91]" data-testid="button-dashboard-add-product"><Plus size={13}/> New fragrance</button></div></div>
     </div>
-    <div className="mt-6 rounded-lg border border-white/[.07] bg-[#023f44] p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[9px] uppercase tracking-[.16em] text-[#a9956d]">Stock watch</p><h2 className="mt-1 font-serif text-xl text-[#e5e0d5]">Replenishment notes</h2></div><span className="rounded-full border border-[#bd886a]/20 bg-[#bd886a]/[.08] px-3 py-1 text-[9px] text-[#d4a687]" data-testid="text-low-stock-count">{lowStock.length} need attention</span></div>{lowStock.length?<div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">{lowStock.slice(0,6).map(p=><div key={p.id} className="flex items-center justify-between rounded border border-white/[.05] bg-[#141a1c] px-3 py-3" data-testid={`low-stock-item-${p.id}`}><span className="truncate text-xs text-[#c9cbc3]">{p.title}</span><span className="ml-3 font-mono text-[10px] text-[#d5a087]">{p.stock} left</span></div>)}</div>:<p className="mt-4 text-xs text-[#819087]" data-testid="state-low-stock-clear">Every fragrance is comfortably stocked.</p>}</div>
+     <div className="mt-6 rounded-lg border border-white/[.07] bg-[#023f44] p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[9px] uppercase tracking-[.16em] text-[#a9956d]">Stock watch</p><h2 className="mt-1 font-serif text-xl text-[#e5e0d5]">Replenishment notes</h2></div><span className="rounded-full border border-[#bd886a]/20 bg-[#bd886a]/[.08] px-3 py-1 text-[9px] text-[#d4a687]" data-testid="text-low-stock-count">{lowStock.length} need attention</span></div>{lowStock.length?<div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">{lowStock.slice(0,6).map(p=><div key={p.id} className="flex items-center justify-between rounded border border-white/[.05] bg-[#141a1c] px-3 py-3" data-testid={`low-stock-item-${p.id}`}><span className="truncate text-xs text-[#c9cbc3]">{p.title}</span><span className="ml-3 text-right font-mono text-[10px] text-[#d5a087]">{p.size_variants.filter(v=>v.stock<=threshold).map(v=>`${v.bottle_size_ml ?? "?"} ml: ${v.stock}`).join(" · ")}</span></div>)}</div>:<p className="mt-4 text-xs text-[#819087]" data-testid="state-low-stock-clear">Every fragrance is comfortably stocked.</p>}</div>
   </section>;
 }
 
@@ -500,18 +533,30 @@ function ProductEditor({research,draft,setField,setNotes,mode,setMode,editTarget
             <div className="grid gap-3 sm:grid-cols-2">
               <label className={labelClass}>Fragrance name<input required value={draft.title} onChange={e=>setField("title",e.target.value)} placeholder="e.g. Rose No. 04" className={fieldClass} data-testid="input-product-title"/></label>
               <label className={labelClass}>Brand<input required value={draft.brand} onChange={e=>setField("brand",e.target.value)} placeholder="Maya Collection" className={fieldClass} data-testid="input-product-brand"/></label>
-              <label className={labelClass}>Category<input required value={draft.category} onChange={e=>setField("category",e.target.value)} placeholder="Floral · Powdery" className={fieldClass} data-testid="input-product-category"/></label>
-              <label className={labelClass}>SKU<input required value={draft.sku} onChange={e=>setField("sku",e.target.value)} placeholder="MC-ROSE-04" className={fieldClass} data-testid="input-product-sku"/></label>
+              <label className={labelClass}>Category<input required value={draft.category} onChange={e=>setField("category",e.target.value)} placeholder="Women, Men or Unisex" className={fieldClass} data-testid="input-product-category"/></label>
               <label className={labelClass}>Currency<select value={draft.currency ?? "USD"} onChange={e=>setField("currency",e.target.value as "USD" | "IQD")} className={fieldClass} data-testid="select-product-currency"><option value="USD">USD — US Dollar</option><option value="IQD">IQD — Iraqi Dinar</option></select></label>
-              <label className={labelClass}>Price ({draft.currency ?? "USD"})<input required min="0" step="0.01" type="number" value={draft.price} onChange={e=>setField("price",Number(e.target.value))} className={fieldClass} data-testid="input-product-price"/></label>
-              <label className={labelClass}>Bottle size (ml)<input min="1" max="10000" step="1" type="number" value={draft.bottle_size_ml ?? ""} onChange={e=>setField("bottle_size_ml",e.target.value === "" ? null : Number(e.target.value))} placeholder="e.g. 50 or 100" className={fieldClass} data-testid="input-product-bottle-size"/><span className="mt-1 block normal-case tracking-normal text-[#929992]">Leave blank only if the size is unknown.</span></label>
-              <label className={labelClass}>Stock on hand<input required min="0" step="1" type="number" value={draft.stock} onChange={e=>setField("stock",Number(e.target.value))} className={fieldClass} data-testid="input-product-stock"/></label>
             </div>
-            <p className="mt-3 text-[10px] text-[#b5c8c5]">Enter the price in the selected currency. Changing currency does not convert the amount.</p>
-            <p className="mt-2 text-sm text-[#F0D49A]" data-testid="text-preview-price-size">{money(draft.price, draft.currency)}{draft.bottle_size_ml ? ` · ${draft.bottle_size_ml} ml` : ""}</p>
           </fieldset>
-          <fieldset><legend className="mb-3 text-[9px] font-semibold uppercase tracking-[.16em] text-[#c3b080]">02 · The fragrance story</legend><label className={labelClass}>Description / scent story<textarea value={draft.description} onChange={e=>setField("description",e.target.value)} rows={4} placeholder="Describe the feeling, the setting, and how this composition unfolds…" className="mt-1.5 w-full resize-y rounded-md border border-white/[.1] bg-[#121819] px-3 py-3 text-[12px] leading-5 text-[#e7e4dc] outline-none placeholder:text-[#5f6964] focus:border-[#b9a274]/65" data-testid="input-product-description"/></label></fieldset>
-          <fieldset><legend className="mb-3 text-[9px] font-semibold uppercase tracking-[.16em] text-[#c3b080]">03 · Olfactory pyramid</legend><div className="grid gap-3"><NoteInput label="Top notes" hint="The first impression" value={noteString("top_notes")} onChange={v=>setNotes("top_notes",v)} testId="input-top-notes" tone="top"/><NoteInput label="Heart notes" hint="The character at its heart" value={noteString("heart_notes")} onChange={v=>setNotes("heart_notes",v)} testId="input-heart-notes" tone="heart"/><NoteInput label="Base notes" hint="The lasting signature" value={noteString("base_notes")} onChange={v=>setNotes("base_notes",v)} testId="input-base-notes" tone="base"/></div><p className="mt-2 text-[9px] text-[#717c76]">Separate each note with a comma.</p></fieldset>
+          <fieldset>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <legend className="text-[9px] font-semibold uppercase tracking-[.16em] text-[#c3b080]">02 · Bottle sizes, prices & stock</legend>
+              <span className="text-[9px] text-[#929992]">{draft.size_variants.length} of 5 sizes</span>
+            </div>
+            <p className="mb-3 text-[10px] leading-5 text-[#b5c8c5]">Enter each size with its own price and stock. Common examples are 50 ml and 100 ml.</p>
+            <div className="space-y-2">
+              {draft.size_variants.map((variant,index)=><div key={`variant-${index}`} className="grid grid-cols-[1fr_1fr_1fr_38px] gap-2 rounded-md border border-white/[.07] bg-[#002b2f] p-2 sm:items-end" data-testid={`row-product-size-${index}`}>
+                <label className={labelClass}>Size (ml)<input required min="1" max="10000" step="1" type="number" value={variant.bottle_size_ml || ""} onChange={e=>setField("size_variants",draft.size_variants.map((item,i)=>i===index?{...item,bottle_size_ml:Number(e.target.value)}:item))} placeholder={index===0?"50":"100"} className={fieldClass} data-testid={`input-product-size-${index}`}/></label>
+                <label className={labelClass}>Price ({draft.currency ?? "USD"})<input required min="0" step="0.01" type="number" value={variant.price} onChange={e=>setField("size_variants",draft.size_variants.map((item,i)=>i===index?{...item,price:Number(e.target.value)}:item))} placeholder="0.00" className={fieldClass} data-testid={`input-product-variant-price-${index}`}/></label>
+                <label className={labelClass}>Stock<input required min="0" step="1" type="number" value={variant.stock} onChange={e=>setField("size_variants",draft.size_variants.map((item,i)=>i===index?{...item,stock:Number(e.target.value)}:item))} placeholder="0" className={fieldClass} data-testid={`input-product-variant-stock-${index}`}/></label>
+                <button type="button" onClick={()=>setField("size_variants",draft.size_variants.filter((_,i)=>i!==index))} disabled={draft.size_variants.length<=1} aria-label={`Remove ${variant.bottle_size_ml} ml size`} className="mb-0.5 grid h-10 w-[38px] place-items-center rounded-md border border-[#c7796a]/25 text-[#e09a8b] disabled:cursor-not-allowed disabled:opacity-30" data-testid={`button-remove-product-size-${index}`}><Trash2 size={14}/></button>
+              </div>)}
+            </div>
+            <button type="button" onClick={()=>setField("size_variants",[...draft.size_variants,{bottle_size_ml:[50,100,150,200,250][draft.size_variants.length]??250,price:0,stock:0}])} disabled={draft.size_variants.length>=5} className="mt-3 inline-flex h-9 items-center gap-2 rounded-md border border-[#b99e6e]/30 px-3 text-[9px] font-medium uppercase tracking-[.1em] text-[#d4c49c] disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-add-product-size"><Plus size={13}/>Add size</button>
+            <p className="mt-3 text-[10px] text-[#b5c8c5]">Changing currency does not convert prices.</p>
+            <p className="mt-2 text-sm text-[#F0D49A]" data-testid="text-preview-price-size">{draft.size_variants.map(v=>`${v.bottle_size_ml || "—"} ml · ${money(v.price,draft.currency)}`).join("  /  ")}</p>
+          </fieldset>
+          <fieldset><legend className="mb-3 text-[9px] font-semibold uppercase tracking-[.16em] text-[#c3b080]">03 · The fragrance story</legend><label className={labelClass}>Description / scent story<textarea value={draft.description} onChange={e=>setField("description",e.target.value)} rows={4} placeholder="Describe the feeling, the setting, and how this composition unfolds…" className="mt-1.5 w-full resize-y rounded-md border border-white/[.1] bg-[#121819] px-3 py-3 text-[12px] leading-5 text-[#e7e4dc] outline-none placeholder:text-[#5f6964] focus:border-[#b9a274]/65" data-testid="input-product-description"/></label></fieldset>
+          <fieldset><legend className="mb-3 text-[9px] font-semibold uppercase tracking-[.16em] text-[#c3b080]">04 · Olfactory pyramid</legend><div className="grid gap-3"><NoteInput label="Top notes" hint="The first impression" value={noteString("top_notes")} onChange={v=>setNotes("top_notes",v)} testId="input-top-notes" tone="top"/><NoteInput label="Heart notes" hint="The character at its heart" value={noteString("heart_notes")} onChange={v=>setNotes("heart_notes",v)} testId="input-heart-notes" tone="heart"/><NoteInput label="Base notes" hint="The lasting signature" value={noteString("base_notes")} onChange={v=>setNotes("base_notes",v)} testId="input-base-notes" tone="base"/></div><p className="mt-2 text-[9px] text-[#717c76]">Separate each note with a comma.</p></fieldset>
           <fieldset><legend className="mb-3 text-[9px] font-semibold uppercase tracking-[.16em] text-[#c3b080]">04 · Materials & image</legend><label className={labelClass}>Cosmetic ingredients<CommaSeparatedInput value={noteString("ingredients")} onChange={v=>setNotes("ingredients",v)} multiline placeholder="Alcohol denat., parfum, linalool…" className="mt-1.5 w-full resize-y rounded-md border border-white/[.1] bg-[#121819] px-3 py-2.5 text-[11px] leading-5 text-[#e7e4dc] outline-none placeholder:text-[#5f6964] focus:border-[#b9a274]/65" testId="input-product-ingredients"/></label><div className="mt-4"><label className={labelClass}>Image URL</label><div className="mt-1.5 flex gap-2"><input value={draft.image_url} onChange={e=>setField("image_url",e.target.value)} placeholder="https://… or uploaded image path" className="h-10 min-w-0 flex-1 rounded-md border border-white/[.1] bg-[#121819] px-3 text-[11px] text-[#e7e4dc] outline-none placeholder:text-[#5f6964] focus:border-[#b9a274]/65" data-testid="input-product-image-url"/><button type="button" onClick={onPickFile} disabled={uploadPending} className="inline-flex shrink-0 items-center gap-2 rounded-md border border-white/10 px-3 text-[9px] uppercase tracking-[.1em] text-[#bac0b8] hover:bg-white/[.05] disabled:opacity-50" data-testid="button-upload-image">{uploadPending?<Loader2 size={14} className="animate-spin"/>:<Upload size={14}/>}<span className="hidden sm:inline">{uploadPending?"Uploading":"Upload"}</span></button><input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" onChange={e=>{onFile(e.currentTarget.files?.[0]);e.currentTarget.value="";}} aria-label="Upload fragrance image" data-testid="input-product-image-file"/></div><p className="mt-2 text-[9px] text-[#717c76]">Enter an image URL or upload JPEG, PNG, WebP or AVIF, up to 5 MB.</p></div></fieldset>
         </div>
         {research}
