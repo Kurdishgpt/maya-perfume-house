@@ -1,0 +1,8 @@
+[build]
+  command = "pnpm --filter @workspace/maya-perfume-shop... run build"
+  publish = "artifacts/maya-perfume-shop/dist/public"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
