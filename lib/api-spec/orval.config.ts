@@ -33,9 +33,6 @@ export default defineConfig({
         fetch: {
           includeHttpResponseReturnType: false,
         },
-        query: {
-          version: 5,
-        },
         mutator: {
           path: path.resolve(apiClientReactSrc, "custom-fetch.ts"),
           name: "customFetch",

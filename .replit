@@ -1,4 +1,4 @@
-modules = ["nodejs-24", "python-base-3.13", "postgresql-16"]
+modules = ["nodejs-24"]
 
 [deployment]
 router = "application"
@@ -23,6 +23,3 @@ timeoutMs = 20000
 
 [userenv.shared]
 ADMIN_EMAIL = "rahandayub0@gmail.com"
-
-[nix]
-channel = "stable-25_05"
