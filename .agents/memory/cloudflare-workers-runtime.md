@@ -14,3 +14,9 @@ For Cloudflare builds, define dependency overrides in the root package manifest'
 **Why:** Cloudflare's pnpm 9.10 build rejected the lockfile metadata when overrides were configured only in workspace settings; root package overrides kept the same patches compatible with both the build and the local pnpm version.
 
 **How to apply:** When changing overrides or regenerating the lockfile, validate frozen installs under pnpm 9.10 and the local pnpm version before publishing.
+
+The workspace build runs Vite builds without Replit service environment variables. Vite configs must therefore keep `PORT` and `BASE_PATH` optional for builds, using defaults that match each artifact's service manifest.
+
+**Why:** Cloudflare's build environment does not provide Replit's per-service variables, but Vite still loads server settings while producing static assets.
+
+**How to apply:** Prefer explicit environment values when present; use the artifact's configured port and base path as build-safe defaults so local dev and preview keep their expected routes.
