@@ -1,5 +1,10 @@
 import { createHmac, createHash, timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
+import { getRuntimeEnv } from "../lib/runtime-env";
+
+export function isAdminConfigured(): boolean {
+  return Boolean(getRuntimeEnv("ADMIN_PANEL_PASSWORD") && getRuntimeEnv("SESSION_SECRET"));
+}
 
 const passcodeCookieName = "maya_admin_unlock";
 const passcodeCookieMaxAge = 30 * 60;
@@ -17,7 +22,7 @@ function readCookie(req: Request): string | undefined {
 }
 
 export function isAdminPasscodeUnlocked(req: Request): boolean {
-  const secret = process.env.SESSION_SECRET;
+  const secret = getRuntimeEnv("SESSION_SECRET");
   const token = readCookie(req);
   if (!secret || !token) return false;
 
@@ -34,7 +39,7 @@ export function isAdminPasscodeUnlocked(req: Request): boolean {
 }
 
 export function setAdminPasscodeCookie(res: Response): boolean {
-  const secret = process.env.SESSION_SECRET;
+  const secret = getRuntimeEnv("SESSION_SECRET");
   if (!secret) return false;
 
   const expiresAt = Date.now() + passcodeCookieMaxAge * 1000;
@@ -46,7 +51,7 @@ export function setAdminPasscodeCookie(res: Response): boolean {
     "SameSite=Strict",
     `Max-Age=${passcodeCookieMaxAge}`,
   ];
-  if (process.env.NODE_ENV === "production") cookieParts.push("Secure");
+  if (getRuntimeEnv("NODE_ENV") === "production") cookieParts.push("Secure");
   res.setHeader("Set-Cookie", cookieParts.join("; "));
   return true;
 }
@@ -59,12 +64,12 @@ export function clearAdminPasscodeCookie(res: Response): void {
     "SameSite=Strict",
     "Max-Age=0",
   ];
-  if (process.env.NODE_ENV === "production") cookieParts.push("Secure");
+  if (getRuntimeEnv("NODE_ENV") === "production") cookieParts.push("Secure");
   res.setHeader("Set-Cookie", cookieParts.join("; "));
 }
 
 export function verifyAdminPasscode(received: string): boolean {
-  const adminPasscode = process.env.ADMIN_PANEL_PASSWORD;
+  const adminPasscode = getRuntimeEnv("ADMIN_PANEL_PASSWORD");
   if (!adminPasscode) return false;
   const receivedDigest = createHash("sha256").update(received).digest();
   const expectedDigest = createHash("sha256").update(adminPasscode).digest();
