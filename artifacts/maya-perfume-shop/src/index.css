@@ -949,10 +949,10 @@ button, a, input, textarea, select { -webkit-tap-highlight-color:transparent; }
 .mc-wel-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 58%; }
 .mc-wel-shade { position:absolute; inset:0; background:linear-gradient(180deg,#1d140a26 0%,transparent 35%,transparent 80%,#002d3226 100%); }
 .mc-wel-top { position:relative; text-align:center; padding:calc(22px + env(safe-area-inset-top,0px)) 18px 0; }
-.mc-wel-brand { display:flex; align-items:center; justify-content:center; gap:12px; }
-.mc-wel-brand > span { width:min(15vw,96px); height:1px; background:#d9b56a; }
+.mc-wel-brand { display:flex; align-items:center; justify-content:center; gap:9px; width:max-content; max-width:calc(100% - 12px); min-height:46px; margin:0 auto; padding:8px 12px; border:1px solid #d9b56a; border-radius:999px; background:linear-gradient(180deg,#0a3b45,#073039); box-shadow:0 8px 22px -12px #000c,inset 0 1px 0 #ffffff24; }
+.mc-wel-brand > span { width:min(13vw,72px); height:1px; background:#d9b56a; }
 .mc-wel-crown { width:30px; height:22px; color:#e2b958; }
-.mc-wel-brand strong { font-family:'Cinzel',serif; font-weight:600; font-size:clamp(15px,3.6vw,26px); letter-spacing:.04em; color:#f1d48f; }
+.mc-wel-brand strong { font-family:'Cinzel',serif; font-weight:600; font-size:clamp(13px,3.6vw,26px); letter-spacing:.04em; color:#f1d48f; white-space:nowrap; }
 .mc-wel h1 { margin:clamp(18px,4vh,32px) 0 10px; font-family:'Cormorant Garamond',serif; font-weight:600; line-height:1.02; text-shadow:0 3px 18px #1d140a88; }
 [dir='rtl'] .mc-wel h1 { font-family:var(--mc-serif); }
 .mc-wel h1 span { display:block; font-size:clamp(40px,11vw,76px); color:#fbf8f1; }
