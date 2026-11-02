@@ -7,6 +7,7 @@ import { FlaskConical, RefreshCw, Search, ChevronLeft, ChevronRight, ShoppingBag
 import { PageBar } from '@/components/store/header';
 import { useStore } from '@/lib/store-context';
 import { formatMoney } from '@/lib/money';
+import { matchesRawMaterialSearch } from '@/lib/raw-material-search';
 import { useBack } from '@/pages/store/use-back';
 import './raw-materials.css';
 
@@ -70,7 +71,7 @@ export default function RawMaterialsPage() {
   const list = useMemo(() => {
     const s = search.trim().toLowerCase();
     const matching = items.filter((m) => m.published && (cat === 'All' || m.category === cat) &&
-      (!s || `${m.name} ${m.source_sku ?? ''} ${m.category} ${m.description} ${m.source_description}`.toLowerCase().includes(s)));
+      (!s || matchesRawMaterialSearch(m, s)));
     if (sort === 'low') matching.sort((a, b) => a.currency.localeCompare(b.currency) || a.price - b.price);
     if (sort === 'high') matching.sort((a, b) => a.currency.localeCompare(b.currency) || b.price - a.price);
     return matching;

@@ -19,6 +19,7 @@ import {
 import type { HillenCategory, RawMaterial, RawMaterialCandidate, RawMaterialImport, RawMaterialResearch } from "@workspace/api-client-react";
 import { AlertTriangle, CheckCircle2, CloudDownload, Download, ExternalLink, FlaskConical, Loader2, Pencil, Plus, RefreshCw, Search, Sparkles, Trash2, X } from "lucide-react";
 import { formatMoney, type Currency } from "@/lib/money";
+import { matchesRawMaterialSearch } from "@/lib/raw-material-search";
 
 const card = "rounded-lg border border-white/[.08] bg-[#023f44]/90";
 const input = "h-10 w-full rounded-md border border-white/[.09] bg-[#00262a] px-3 text-xs text-[#e2e0d8] outline-none placeholder:text-[#606b66] focus:border-[#b9a274]/60";
@@ -101,7 +102,7 @@ export function RawMaterialAdmin({ notify }: { notify: (tone: "success" | "error
     const term = search.trim().toLowerCase();
     return materials.filter((material) =>
       (savedCategory === "All" || material.category === savedCategory) &&
-      (!term || `${material.name} ${material.description} ${material.source_description} ${material.source_sku ?? ""} ${material.category} ${material.source_id}`.toLowerCase().includes(term)),
+      (!term || matchesRawMaterialSearch(material, term)),
     );
   }, [materials, savedCategory, search]);
 
