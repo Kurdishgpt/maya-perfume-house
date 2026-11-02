@@ -83,11 +83,18 @@ are catalog entries on `/raw-material`, not separate detail pages, so their
 dashboard links open a filtered listing item and they are not duplicated in
 the product sitemap.
 
-Public XML endpoints are `/sitemap.xml` (the index),
+Public XML endpoints include `/sitemap.xml` (the full URL list),
 `/products-sitemap.xml`, `/pages-sitemap.xml`, and `/images-sitemap.xml`.
 `robots.txt` points to the index and excludes admin, cart, checkout, wishlist,
 and welcome routes. Sitemap generation uses successfully checked canonical,
 indexable records only; unknown `lastmod` values are omitted.
+
+The storefront build also refreshes XML copies of these routes from the public
+SEO API before Vite builds. This is required for static hosting, where the
+single-page-app fallback would otherwise return `index.html` for `/sitemap.xml`.
+Run `pnpm --filter @workspace/maya-perfume-shop run refresh:sitemaps` to refresh
+the public files without a full build. A failed or incomplete source response
+stops the build rather than publishing an empty sitemap.
 
 Cloudflare Cron Triggers are configured every 15 minutes. They process one
 small batch at a time and start a new crawl only when scheduled crawling is
