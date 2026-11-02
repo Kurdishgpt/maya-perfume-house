@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { getListRawMaterialsQueryKey, getListRawMaterialsQueryOptions } from '@workspace/api-client-react';
 import type { RawMaterial } from '@workspace/api-client-react';
 import { useQuery } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { FlaskConical, RefreshCw, Search, ChevronLeft, ChevronRight, ShoppingBag
 import { PageBar } from '@/components/store/header';
 import { useStore } from '@/lib/store-context';
 import { formatMoney } from '@/lib/money';
-import { matchesRawMaterialSearch, rawMaterialSearchScore } from '@/lib/raw-material-search';
+import { createRawMaterialSearch } from '@/lib/raw-material-search';
 import { useBack } from '@/pages/store/use-back';
 import './raw-materials.css';
 
@@ -63,22 +63,24 @@ export default function RawMaterialsPage() {
   const back = useBack('/');
   const q = useQuery(getListRawMaterialsQueryOptions({ query: { queryKey: getListRawMaterialsQueryKey(), retry: 1 } }));
   const [search, setSearch] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '');
+  const deferredSearch = useDeferredValue(search);
   const [cat, setCat] = useState('All');
   const [sort, setSort] = useState('featured');
   const [page, setPage] = useState(1);
   const items = q.data ?? [];
   const cats = useMemo(() => ['All', ...[...new Set(items.map((m) => m.category).filter(Boolean))].sort()], [items]);
   const list = useMemo(() => {
-    const s = search.trim().toLowerCase();
+    const s = deferredSearch.trim();
+    const searcher = createRawMaterialSearch(s);
     const matching = items.filter((m) => m.published && (cat === 'All' || m.category === cat) &&
-      (!s || matchesRawMaterialSearch(m, s)));
+      (!s || searcher.matches(m)));
     if (sort === 'low') matching.sort((a, b) => a.currency.localeCompare(b.currency) || a.price - b.price);
     if (sort === 'high') matching.sort((a, b) => a.currency.localeCompare(b.currency) || b.price - a.price);
     if (sort === 'featured' && s) {
-      matching.sort((a, b) => rawMaterialSearchScore(b, s) - rawMaterialSearchScore(a, s));
+      matching.sort((a, b) => searcher.score(b) - searcher.score(a));
     }
     return matching;
-  }, [items, search, cat, sort]);
+  }, [items, deferredSearch, cat, sort]);
   const pageSize = 24;
   const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
   const currentPage = Math.min(page, totalPages);

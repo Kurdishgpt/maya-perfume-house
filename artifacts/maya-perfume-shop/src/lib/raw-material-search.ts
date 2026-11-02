@@ -11,8 +11,19 @@ export function normalizeRawMaterialSearch(value: unknown): string {
     .replace(/\s+/g, " ");
 }
 
-function getSearchFields(material: RawMaterial): string[] {
-  return [
+type MaterialSearchIndex = {
+  fields: string[];
+  normalizedName: string;
+  compactText: string;
+};
+
+const materialSearchIndexes = new WeakMap<RawMaterial, MaterialSearchIndex>();
+
+function getSearchIndex(material: RawMaterial): MaterialSearchIndex {
+  const cached = materialSearchIndexes.get(material);
+  if (cached) return cached;
+
+  const fields = [
     material.name,
     material.source_name,
     material.source_sku,
@@ -26,32 +37,49 @@ function getSearchFields(material: RawMaterial): string[] {
       ? material.quantity_options.flatMap((option) => [option.label, option.value, option.unit])
       : []),
   ].map(normalizeRawMaterialSearch).filter(Boolean);
+  const index = {
+    fields,
+    normalizedName: normalizeRawMaterialSearch(material.name),
+    compactText: fields.join("").replaceAll(" ", ""),
+  };
+  materialSearchIndexes.set(material, index);
+  return index;
+}
+
+export function createRawMaterialSearch(query: string) {
+  const normalizedQuery = normalizeRawMaterialSearch(query);
+  const terms = normalizedQuery.split(" ");
+  const allTermsMatch = (field: string) => terms.every((term) => field.includes(term));
+  const compactQuery = normalizedQuery.replaceAll(" ", "");
+  const scores = new WeakMap<RawMaterial, number>();
+
+  const score = (material: RawMaterial) => {
+    const cachedScore = scores.get(material);
+    if (cachedScore !== undefined) return cachedScore;
+    if (!normalizedQuery) return 1;
+
+    const index = getSearchIndex(material);
+    let result = 0;
+    // Put the intended product-name match ahead of broader description/SKU matches.
+    if (index.normalizedName === normalizedQuery) result = 1000;
+    else if (index.normalizedName.startsWith(normalizedQuery)) result = 900;
+    else if (allTermsMatch(index.normalizedName)) result = 700;
+    // Match partial words across fields, without matching across field boundaries.
+    else if (index.fields.some(allTermsMatch)) result = 300;
+    // Also accept compact spellings such as "IsoESuper" and "Iso-E-Super".
+    else if (compactQuery.length >= 3 && index.compactText.includes(compactQuery)) result = 100;
+
+    scores.set(material, result);
+    return result;
+  };
+
+  return { matches: (material: RawMaterial) => score(material) > 0, score };
 }
 
 export function rawMaterialSearchScore(material: RawMaterial, query: string): number {
-  const normalizedQuery = normalizeRawMaterialSearch(query);
-  if (!normalizedQuery) return 1;
-
-  const fields = getSearchFields(material);
-  const normalizedName = normalizeRawMaterialSearch(material.name);
-  const terms = normalizedQuery.split(" ");
-  const allTermsMatch = (field: string) => terms.every((term) => field.includes(term));
-
-  // Put the intended product-name match ahead of broader description/SKU matches.
-  if (normalizedName === normalizedQuery) return 1000;
-  if (normalizedName.startsWith(normalizedQuery)) return 900;
-  if (allTermsMatch(normalizedName)) return 700;
-
-  // Match partial words across product fields, e.g. "iso" -> "Iso E Super".
-  // Keep fields separate so terms cannot accidentally match across field boundaries.
-  if (fields.some(allTermsMatch)) return 300;
-
-  // Also accept compact spellings such as "IsoESuper" and "Iso-E-Super".
-  const compactQuery = normalizedQuery.replaceAll(" ", "");
-  const compactText = fields.join(" ").replaceAll(" ", "");
-  return compactQuery.length >= 3 && compactText.includes(compactQuery) ? 100 : 0;
+  return createRawMaterialSearch(query).score(material);
 }
 
 export function matchesRawMaterialSearch(material: RawMaterial, query: string): boolean {
-  return rawMaterialSearchScore(material, query) > 0;
+  return createRawMaterialSearch(query).matches(material);
 }

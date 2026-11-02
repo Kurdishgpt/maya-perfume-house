@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getGetRawMaterialImportQueryKey,
@@ -19,7 +19,7 @@ import {
 import type { HillenCategory, RawMaterial, RawMaterialCandidate, RawMaterialImport, RawMaterialResearch } from "@workspace/api-client-react";
 import { AlertTriangle, CheckCircle2, CloudDownload, Download, ExternalLink, FlaskConical, Loader2, Pencil, Plus, RefreshCw, Search, Sparkles, Trash2, X } from "lucide-react";
 import { formatMoney, type Currency } from "@/lib/money";
-import { matchesRawMaterialSearch, rawMaterialSearchScore } from "@/lib/raw-material-search";
+import { createRawMaterialSearch } from "@/lib/raw-material-search";
 
 const card = "rounded-lg border border-white/[.08] bg-[#023f44]/90";
 const input = "h-10 w-full rounded-md border border-white/[.09] bg-[#00262a] px-3 text-xs text-[#e2e0d8] outline-none placeholder:text-[#606b66] focus:border-[#b9a274]/60";
@@ -90,6 +90,7 @@ export function RawMaterialAdmin({ notify }: { notify: (tone: "success" | "error
   const [edit, setEdit] = useState<Edit | null>(null);
   const [deleting, setDeleting] = useState<RawMaterial | null>(null);
   const [processing, setProcessing] = useState(false);
+  const deferredSearch = useDeferredValue(search);
 
   const materials = list.data ?? [];
   const selectedCategoryId = selectedCategory === "all" ? null : Number(selectedCategory);
@@ -99,14 +100,15 @@ export function RawMaterialAdmin({ notify }: { notify: (tone: "success" | "error
   const savedIds = useMemo(() => new Set(materials.map((material) => material.source_id)), [materials]);
   const savedCategories = useMemo(() => [...new Set(materials.map((material) => material.category).filter(Boolean))].sort(), [materials]);
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const term = deferredSearch.trim();
+    const searcher = createRawMaterialSearch(term);
     const matches = materials.filter((material) =>
       (savedCategory === "All" || material.category === savedCategory) &&
-      (!term || matchesRawMaterialSearch(material, term)),
+      (!term || searcher.matches(material)),
     );
-    if (term) matches.sort((a, b) => rawMaterialSearchScore(b, term) - rawMaterialSearchScore(a, term));
+    if (term) matches.sort((a, b) => searcher.score(b) - searcher.score(a));
     return matches;
-  }, [materials, savedCategory, search]);
+  }, [materials, savedCategory, deferredSearch]);
 
   const refresh = async () => Promise.all([
     queryClient.invalidateQueries({ queryKey: getListAdminRawMaterialsQueryKey() }),
