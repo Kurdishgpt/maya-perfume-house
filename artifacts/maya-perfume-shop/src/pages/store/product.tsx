@@ -3,6 +3,7 @@ import { Link, useParams } from 'wouter';
 import { Check, Heart, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { PageBar } from '@/components/store/header';
 import { formatMoney } from '@/lib/money';
+import { setProductPageMetadata } from '@/lib/product-seo';
 import { useStore } from '@/lib/store-context';
 import { useBack } from '@/pages/store/use-back';
 
@@ -11,6 +12,16 @@ export default function ProductPage() {
   const params = useParams<{ id: string }>();
   const back = useBack('/collection');
   const product = products.find((p) => p.id === Number(params.id));
+  useEffect(() => product ? setProductPageMetadata({
+    name: product.title,
+    description: product.description,
+    url: `https://mayacolllection.com/product/${encodeURIComponent(String(product.id))}`,
+    imageUrl: product.image_url,
+    price: product.price,
+    currency: product.currency,
+    sku: product.sku,
+    category: product.category,
+  }) : undefined, [product]);
   const [active, setActive] = useState(0);
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState<number | null>(null);

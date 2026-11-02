@@ -11,7 +11,7 @@ import { createRawMaterialSearch } from '@/lib/raw-material-search';
 import { useBack } from '@/pages/store/use-back';
 import './raw-materials.css';
 
-function MaterialCard({ m, index }: { m: RawMaterial; index: number }) {
+export function MaterialCard({ m, index, detailPageLink = true }: { m: RawMaterial; index: number; detailPageLink?: boolean }) {
   const { t, addRawMaterial } = useStore();
   const [quantity, setQuantity] = useState(m.unit === 'g' ? 10 : 1);
   const [imageFailed, setImageFailed] = useState(false);
@@ -31,7 +31,9 @@ function MaterialCard({ m, index }: { m: RawMaterial; index: number }) {
     <div className="mc-raw-top">
       <div className="mc-raw-img">{m.image_url && !imageFailed ? <img src={m.image_url} alt={m.name} loading="lazy" onError={() => setImageFailed(true)}/> : <FlaskConical size={22}/>}</div>
       <div style={{ minWidth: 0 }}>
-        <h3 data-testid={`text-raw-name-${m.id}`}>{m.name}</h3>
+        <h3 data-testid={`text-raw-name-${m.id}`}>{detailPageLink
+          ? <Link className="mc-raw-title-link" href={`/raw-material/${encodeURIComponent(String(m.source_id))}`}>{m.name}</Link>
+          : m.name}</h3>
         <span className="mc-raw-cat">{m.category}</span>
         <div className="mc-raw-price" dir="ltr" data-testid={`text-raw-price-${m.id}`}>{formatMoney(m.price, m.currency)} <small>/ {unitLabel}</small></div>
       </div>

@@ -4,6 +4,5 @@ Disallow: /admin
 Disallow: /bag
 Disallow: /wishlist
 Disallow: /checkout
-Disallow: /welcome
 
 Sitemap: https://mayacolllection.com/sitemap.xml

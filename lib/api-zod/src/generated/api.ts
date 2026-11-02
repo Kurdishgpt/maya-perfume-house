@@ -678,6 +678,51 @@ export const ListRawMaterialsResponse = zod.array(ListRawMaterialsResponseItem)
 
 
 /**
+ * @summary Get one published raw material by its public source ID
+ */
+
+
+
+export const GetRawMaterialBySourceIdParams = zod.object({
+  "source_id": zod.coerce.number().int().min(1)
+})
+
+export const GetRawMaterialBySourceIdResponse = zod.object({
+  "source_id": zod.number().int(),
+  "source_sku": zod.string().nullable(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "price": zod.number(),
+  "currency": zod.enum(['USD', 'IQD']),
+  "image_url": zod.string(),
+  "source_url": zod.string(),
+  "supplier_available": zod.boolean(),
+  "source_description": zod.string(),
+  "source_category": zod.string(),
+  "unit": zod.enum(['g', 'item']),
+  "quantity_options": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "price": zod.number().optional(),
+  "currency": zod.string().optional(),
+  "unit": zod.string().optional()
+}))
+}).and(zod.object({
+  "id": zod.number().int(),
+  "supabase_id": zod.string().uuid().nullable(),
+  "source_name": zod.string(),
+  "source_category": zod.string(),
+  "source_image_url": zod.string(),
+  "source_available": zod.boolean(),
+  "source_price": zod.number(),
+  "source_currency": zod.enum(['USD', 'IQD']),
+  "published": zod.boolean(),
+  "imported_at": zod.coerce.date()
+}))
+
+
+/**
  * @summary List all raw materials for administration
  */
 export const ListAdminRawMaterialsResponseItem = zod.object({

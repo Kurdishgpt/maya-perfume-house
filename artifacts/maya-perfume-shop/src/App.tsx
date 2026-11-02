@@ -22,16 +22,104 @@ import Bag from '@/pages/store/bag';
 import Checkout from '@/pages/store/checkout';
 import InfoPage from '@/pages/store/info';
 import RawMaterialsPage from '@/pages/store/raw-materials';
+import RawMaterialDetailPage from '@/pages/store/raw-material-detail';
 import ContactPage from '@/pages/store/contact';
 import { recordNavigation } from '@/pages/store/use-back';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const seoOrigin = 'https://mayacolllection.com';
+const staticSeo: Record<string, { title: string; description: string }> = {
+  '/': {
+    title: 'Maya Collection | Luxury Perfumes & Raw Materials',
+    description: 'Discover Maya Collection fragrances and perfumery raw materials. Browse product details, images, and current prices.',
+  },
+  '/welcome': {
+    title: 'Maya Collection | Luxury Perfumes & Raw Materials',
+    description: 'Discover Maya Collection fragrances and perfumery raw materials. Browse product details, images, and current prices.',
+  },
+  '/collection': {
+    title: 'Perfume Collection | Maya Collection',
+    description: 'Browse Maya Collection perfumes by collection, fragrance family, and bottle size.',
+  },
+  '/raw-material': {
+    title: 'Perfumery Raw Materials | Maya Collection',
+    description: 'Explore published perfumery ingredients and raw materials from Maya Collection, with product details and current prices.',
+  },
+  '/contact': {
+    title: 'Contact Maya Collection',
+    description: 'Contact Maya Collection for store details, customer support, and perfume enquiries.',
+  },
+  '/faq': {
+    title: 'Frequently Asked Questions | Maya Collection',
+    description: 'Find answers to common Maya Collection questions about perfumes, orders, and customer support.',
+  },
+  '/shipping': {
+    title: 'Shipping Information | Maya Collection',
+    description: 'Read Maya Collection delivery information and service details.',
+  },
+  '/returns': {
+    title: 'Returns Information | Maya Collection',
+    description: 'Review Maya Collection return and exchange information.',
+  },
+  '/privacy': {
+    title: 'Privacy Policy | Maya Collection',
+    description: 'Read the Maya Collection privacy policy.',
+  },
+  '/terms': {
+    title: 'Terms of Service | Maya Collection',
+    description: 'Read the Maya Collection terms of service.',
+  },
+};
 
 function StoreShell() {
   const [path] = useLocation();
   const { rtl, isError, products, t } = useStore();
   useEffect(() => { recordNavigation(); window.scrollTo({ top: 0 }); }, [path]);
+  useEffect(() => {
+    if (path.startsWith('/product/') || /^\/raw-material\/\d+$/.test(path)) return;
+    const seo = staticSeo[path] ?? staticSeo['/'];
+    const canonicalPath = path === '/welcome' ? '/' : path;
+    const canonicalUrl = new URL(canonicalPath, seoOrigin).toString();
+    const previousTitle = document.title;
+    const changed: Array<{ element: HTMLMetaElement; previous: string | null; created: boolean }> = [];
+    const setMeta = (attribute: 'name' | 'property', key: string, value: string) => {
+      let element = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
+      const created = !element;
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attribute, key);
+        document.head.append(element);
+      }
+      changed.push({ element, previous: element.getAttribute('content'), created });
+      element.setAttribute('content', value);
+    };
+    document.title = seo.title;
+    setMeta('name', 'description', seo.description);
+    setMeta('property', 'og:title', seo.title);
+    setMeta('property', 'og:description', seo.description);
+    setMeta('property', 'og:url', canonicalUrl);
+    let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const canonicalCreated = !canonical;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.append(canonical);
+    }
+    const previousCanonical = canonical.getAttribute('href');
+    canonical.href = canonicalUrl;
+    return () => {
+      document.title = previousTitle;
+      for (const item of changed.reverse()) {
+        if (item.created) item.element.remove();
+        else if (item.previous === null) item.element.removeAttribute('content');
+        else item.element.setAttribute('content', item.previous);
+      }
+      if (canonicalCreated) canonical?.remove();
+      else if (previousCanonical === null) canonical?.removeAttribute('href');
+      else canonical?.setAttribute('href', previousCanonical);
+    };
+  }, [path]);
   if (path === '/welcome') return <main className="mc-store" dir={rtl ? 'rtl' : 'ltr'}><Welcome/></main>;
   if (path === '/' && !localStorage.getItem('maya-welcomed')) return <Redirect to="/welcome" replace/>;
   return <main className="mc-store" dir={rtl ? 'rtl' : 'ltr'}>
@@ -46,6 +134,7 @@ function StoreShell() {
         <Route path="/bag" component={Bag}/>
         <Route path="/checkout" component={Checkout}/>
         <Route path="/about"><Redirect to="/" replace/></Route>
+        <Route path="/raw-material/:sourceId" component={RawMaterialDetailPage}/>
         <Route path="/raw-material" component={RawMaterialsPage}/>
          <Route path="/contact" component={ContactPage}/>
         <Route path="/faq"><InfoPage label="faq" titleKey="faqTitle" bodyKey="faqBody"/></Route>

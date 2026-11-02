@@ -2402,6 +2402,107 @@ export function useListRawMaterials<TData = Awaited<ReturnType<typeof listRawMat
 
 
 
+export const getGetRawMaterialBySourceIdUrl = (sourceId: number,) => {
+
+
+
+
+  return `/api/raw-materials/${sourceId}`
+}
+
+/**
+ * @summary Get one published raw material by its public source ID
+ */
+export const getRawMaterialBySourceId = async (sourceId: number, options?: Parameters<typeof customFetch>[1]): Promise<RawMaterial> => {
+
+  return customFetch<RawMaterial>(getGetRawMaterialBySourceIdUrl(sourceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRawMaterialBySourceIdQueryKey = (sourceId: number,) => {
+    return [
+    `/api/raw-materials/${sourceId}`
+    ] as const;
+    }
+
+
+export const getGetRawMaterialBySourceIdQueryOptions = <TData = Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError = ErrorType<ErrorEnvelope | RawMaterialErrorResponse>>(sourceId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRawMaterialBySourceIdQueryKey(sourceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRawMaterialBySourceId>>> = ({ signal }) => getRawMaterialBySourceId(sourceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sourceId !== null && sourceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetRawMaterialBySourceIdQueryResult = NonNullable<Awaited<ReturnType<typeof getRawMaterialBySourceId>>>
+export type GetRawMaterialBySourceIdQueryError = ErrorType<ErrorEnvelope | RawMaterialErrorResponse>
+
+
+export function useGetRawMaterialBySourceId<TData = Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError = ErrorType<ErrorEnvelope | RawMaterialErrorResponse>>(
+ sourceId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRawMaterialBySourceId>>,
+          TError,
+          Awaited<ReturnType<typeof getRawMaterialBySourceId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRawMaterialBySourceId<TData = Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError = ErrorType<ErrorEnvelope | RawMaterialErrorResponse>>(
+ sourceId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getRawMaterialBySourceId>>,
+          TError,
+          Awaited<ReturnType<typeof getRawMaterialBySourceId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetRawMaterialBySourceId<TData = Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError = ErrorType<ErrorEnvelope | RawMaterialErrorResponse>>(
+ sourceId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get one published raw material by its public source ID
+ */
+
+export function useGetRawMaterialBySourceId<TData = Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError = ErrorType<ErrorEnvelope | RawMaterialErrorResponse>>(
+ sourceId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getRawMaterialBySourceId>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetRawMaterialBySourceIdQueryOptions(sourceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getListAdminRawMaterialsUrl = () => {
 
 

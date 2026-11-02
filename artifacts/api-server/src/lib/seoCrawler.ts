@@ -230,7 +230,7 @@ function discoveryRecord(item: {
   internal_links?: string[]; html_title?: string;
 }, now: string): SeoRecord {
   const canonical = item.canonical_url;
-  const sitemap = item.indexable && item.page_type !== "raw_material";
+  const sitemap = item.indexable;
   return {
     url: item.url, canonical_url: canonical, page_type: item.page_type, title: item.title,
     description: item.description, image_urls: [...new Set(item.image_urls)].slice(0, 30),
@@ -330,32 +330,30 @@ export async function processSeoCrawlBatch(runId: string): Promise<CrawlRun> {
         } catch { errors.push("A sitemap could not be read."); }
       }
       const catalogs = await discoverCatalogs(origin, robots, seen);
+      for (const item of catalogs.rawMaterials) {
+        const rawUrl = normalizeInternalUrl(`/raw-material/${encodeURIComponent(String(item.source_id))}`, origin, origin);
+        if (!rawUrl || pageExcluded(rawUrl) || !robots.allows(rawUrl)) continue;
+        const queued = queue.find((entry) => entry.url === rawUrl);
+        if (queued) {
+          queued.kind = "raw_material";
+        } else if (!seen.has(rawUrl)) {
+          if (seen.size >= MAX_URLS) { limitReached = true; continue; }
+          seen.add(rawUrl);
+          queue.push({ url: rawUrl, kind: "raw_material" });
+        }
+      }
       queue.push(...catalogs.queue);
       limitReached ||= catalogs.limitReached;
       productsCount = catalogs.products.length;
       rawCount = catalogs.rawMaterials.length;
       errors.push(...catalogs.errors);
-      const rawPage = `${origin}/raw-material`;
-      const rawRecords = catalogs.rawMaterials.map((item) => {
-        const url = `${rawPage}?q=${encodeURIComponent(item.name ?? "")}#raw-material-${encodeURIComponent(String(item.source_id))}`;
-        return discoveryRecord({
-          url, canonical_url: rawPage, page_type: "raw_material", title: item.name ?? "",
-          description: item.description ?? "", image_urls: item.image_url ? [item.image_url] : [],
-          price: typeof item.price === "number" ? item.price : null, currency: item.currency ?? null,
-          http_status: 200, issues: ["no_standalone_detail_page"], category: item.category ?? null, indexable: false,
-        }, now);
-      });
-      if (rawRecords.length) {
-        const { error: rawError } = await supabase.from("seo_discovery_records").upsert(rawRecords, { onConflict: "url" });
-        if (rawError) throw new Error("Raw material discovery could not be saved.");
-        imageCount += rawRecords.reduce((sum, item) => sum + item.image_urls.length, 0);
-      }
       settingsSeeded = true;
     }
 
     const batch = queue.splice(0, BATCH_SIZE);
     const records: SeoRecord[] = [];
     const productApi = new Map<string, ProductSeed>();
+    const rawMaterialApi = new Map<string, RawSeed>();
     if (batch.some((item) => item.kind === "product") && productsCount > 0) {
       try {
         const response = await safeFetch(`${origin}/api/products`, origin);
@@ -365,6 +363,17 @@ export async function processSeoCrawlBatch(runId: string): Promise<CrawlRun> {
         }
       } catch { /* page crawl remains useful without product enrichment */ }
     }
+    const rawItems = batch.filter((item) => item.kind === "raw_material");
+    await Promise.all(rawItems.map(async (item) => {
+      const sourceId = new URL(item.url).pathname.split("/").at(-1);
+      if (!sourceId || !/^\d+$/.test(sourceId)) return;
+      try {
+        const response = await safeFetch(`${origin}/api/raw-materials/${encodeURIComponent(sourceId)}`, origin);
+        if (response.ok && response.headers.get("content-type")?.includes("json")) {
+          rawMaterialApi.set(item.url, await response.json() as RawSeed);
+        }
+      } catch { /* A failed catalog detail lookup keeps the page out of the sitemap. */ }
+    }));
 
     for (const item of batch) {
       if (pageExcluded(item.url) || !robots.allows(item.url)) continue;
@@ -389,23 +398,28 @@ export async function processSeoCrawlBatch(runId: string): Promise<CrawlRun> {
           .map((anchor) => normalizeInternalUrl(anchor.getAttribute("href") ?? "", finalUrl, origin))
           .filter((url): url is string => Boolean(url) && !pageExcluded(url!));
         const product = productApi.get(item.url);
+        const rawMaterial = rawMaterialApi.get(item.url);
         const actualTitle = document.querySelector("title")?.textContent?.trim() ?? "";
-        const productTitle = product?.title ?? product?.name;
-        const productImage = product?.image_url;
+        const productTitle = product?.title ?? product?.name ?? rawMaterial?.name;
+        const productImage = product?.image_url ?? rawMaterial?.image_url;
         if (productImage) images.push(productImage);
         const allImages = [...new Set(images)].slice(0, 30);
         const issues = issueCodes(document, response.status, item.kind, noindex, explicitCanonical ?? null, allImages);
         if (canonicalOutsideSite) issues.push("canonical_outside_site");
         if (item.kind === "product" && allImages.length > 0 && Array.from(document.querySelectorAll("img")).length === 0) issues.push("missing_image_alt");
+        if (item.kind === "raw_material" && !rawMaterial) issues.push("raw_material_not_found");
         const record = discoveryRecord({
           url: item.url, canonical_url: canonical ?? finalUrl, page_type: item.kind,
-          title: productTitle ?? actualTitle, description: product?.description ??
+          title: productTitle ?? actualTitle, description: product?.description ?? rawMaterial?.description ??
             document.querySelector('meta[name="description" i]')?.getAttribute("content")?.trim() ?? "",
-          image_urls: allImages, price: typeof product?.price === "number" ? product.price : null,
-          currency: product?.currency ?? null, http_status: response.status,
+          image_urls: allImages, price: typeof product?.price === "number" ? product.price :
+            typeof rawMaterial?.price === "number" ? rawMaterial.price : null,
+          currency: product?.currency ?? rawMaterial?.currency ?? null, http_status: response.status,
           last_modified: item.lastmod ?? validIsoDate(response.headers.get("last-modified")),
-          issues, category: product?.category ?? null,
-          indexable: response.status >= 200 && response.status < 300 && !noindex && !canonicalOutsideSite && !pageExcluded(finalUrl) && (!canonical || new URL(canonical).origin === origin),
+          issues, category: product?.category ?? rawMaterial?.category ?? null,
+          indexable: response.status >= 200 && response.status < 300 && !noindex && !canonicalOutsideSite &&
+            !pageExcluded(finalUrl) && (!canonical || new URL(canonical).origin === origin) &&
+            (item.kind !== "raw_material" || Boolean(rawMaterial)),
           internal_links: links,
           html_title: actualTitle,
         }, now);

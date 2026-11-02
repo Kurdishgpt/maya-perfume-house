@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
 import { db, isLegacyDatabaseConfigured, rawMaterialsTable } from "@workspace/db";
@@ -7,6 +7,7 @@ import {
   CreateRawMaterialImportBody, CreateRawMaterialImportResponse, DeleteRawMaterialParams,
   GetRawMaterialImportParams, GetRawMaterialImportResponse,
   ListHillenRawMaterialCategoriesResponse, ListRawMaterialImportsResponse,
+  GetRawMaterialBySourceIdParams, GetRawMaterialBySourceIdResponse,
   ListAdminRawMaterialsResponse, ListRawMaterialsResponse,
   ResearchRawMaterialsBody, ResearchRawMaterialsResponse,
   UpdateRawMaterialBody, UpdateRawMaterialParams, UpdateRawMaterialResponse,
@@ -246,6 +247,55 @@ router.get("/raw-materials", async (req, res): Promise<void> => {
   } catch (error) {
     req.log.error({ err: error }, "Supabase raw-material request failed");
     res.status(503).json({ error: "Raw materials are temporarily unavailable." });
+  }
+});
+
+router.get("/raw-materials/:source_id", async (req, res): Promise<void> => {
+  const parsed = GetRawMaterialBySourceIdParams.safeParse(req.params);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { source_id: sourceId } = parsed.data;
+  if (getSupabaseConfigIssue()) {
+    if (!isLegacyDatabaseConfigured) {
+      res.status(503).json({ error: "The raw-material catalog is unavailable until Supabase is configured." });
+      return;
+    }
+    try {
+      const [row] = await db.select().from(rawMaterialsTable).where(and(
+        eq(rawMaterialsTable.sourceId, sourceId),
+        eq(rawMaterialsTable.published, true),
+      )).limit(1);
+      if (!row) {
+        res.status(404).json({ error: "Published raw material not found." });
+        return;
+      }
+      res.setHeader("Cache-Control", "public, max-age=300");
+      res.json(GetRawMaterialBySourceIdResponse.parse(api(row)));
+    } catch (error) {
+      req.log.error({ err: error }, "Legacy raw-material detail read failed");
+      res.status(503).json({ error: "Raw material is temporarily unavailable." });
+    }
+    return;
+  }
+  try {
+    const { data, error } = await getSupabaseAdmin().from("products").select("*")
+      .eq("product_type", "raw_material").eq("is_active", true).eq("source_id", sourceId).maybeSingle();
+    if (error) {
+      req.log.error({ code: error.code }, "Supabase raw-material detail read failed");
+      res.status(503).json({ error: "Raw material is temporarily unavailable." });
+      return;
+    }
+    if (!data) {
+      res.status(404).json({ error: "Published raw material not found." });
+      return;
+    }
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.json(GetRawMaterialBySourceIdResponse.parse(supabaseApi(data as SupabaseMaterialRow)));
+  } catch (error) {
+    req.log.error({ err: error }, "Supabase raw-material detail request failed");
+    res.status(503).json({ error: "Raw material is temporarily unavailable." });
   }
 });
 

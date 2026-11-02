@@ -15,6 +15,76 @@ const cleanRun = (row: Record<string, unknown>) => ({
   remaining_urls: Array.isArray(row.queue_urls) ? row.queue_urls.length : 0,
 });
 const escapeXml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
+const publicPagePaths = ["/", "/collection", "/raw-material", "/contact", "/faq", "/shipping", "/returns", "/privacy", "/terms"];
+const perfumeFamilySku = /^(MAYA-VAR-[A-F0-9]{32})-\d+ML$/i;
+
+type SitemapProductRow = {
+  id: string;
+  legacy_id: number | null;
+  source_id: number | null;
+  sku: string | null;
+  size_ml: number | null;
+  product_type: string;
+  image_url: string | null;
+  additional_images: string[] | null;
+};
+type SitemapEntry = { loc: string; imageUrls?: string[] };
+
+function makeUrlSet(entries: SitemapEntry[], includeImages = false): string {
+  const unique = [...new Map(entries.map((entry) => [entry.loc, entry])).values()];
+  const imageNamespace = includeImages ? ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"' : "";
+  return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${imageNamespace}>${unique.map((entry) => {
+    const images = includeImages ? [...new Set((entry.imageUrls ?? []).flatMap((raw) => {
+      try {
+        const image = new URL(raw);
+        return image.protocol === "https:" && !image.username && !image.password ? [image.toString()] : [];
+      } catch { return []; }
+    }))].slice(0, 10) : [];
+    return `<url><loc>${escapeXml(entry.loc)}</loc>${images.map((image) => `<image:image><image:loc>${escapeXml(image)}</image:loc></image:image>`).join("")}</url>`;
+  }).join("")}</urlset>`;
+}
+
+function activeCatalogEntries(rows: SitemapProductRow[], origin: string): SitemapEntry[] {
+  const entries: SitemapEntry[] = [];
+  const seenRawIds = new Set<number>();
+  for (const row of rows) {
+    if (row.product_type !== "raw_material" || !Number.isSafeInteger(row.source_id) || !row.source_id || seenRawIds.has(row.source_id)) continue;
+    seenRawIds.add(row.source_id);
+    entries.push({
+      loc: new URL(`/raw-material/${encodeURIComponent(String(row.source_id))}`, origin).toString(),
+      imageUrls: [row.image_url ?? "", ...(Array.isArray(row.additional_images) ? row.additional_images : [])].filter(Boolean),
+    });
+  }
+
+  const perfumeGroups = new Map<string, SitemapProductRow[]>();
+  for (const row of rows) {
+    if (row.product_type !== "perfume") continue;
+    const family = perfumeFamilySku.exec(row.sku ?? "")?.[1]?.toUpperCase();
+    const key = family ?? `single:${row.id}`;
+    const group = perfumeGroups.get(key) ?? [];
+    group.push(row);
+    perfumeGroups.set(key, group);
+  }
+  for (const group of perfumeGroups.values()) {
+    const primary = [...group].sort((a, b) => (a.size_ml ?? Number.MAX_SAFE_INTEGER) - (b.size_ml ?? Number.MAX_SAFE_INTEGER))[0];
+    const productId = Number(primary?.legacy_id);
+    if (!Number.isSafeInteger(productId) || productId < 1) continue;
+    entries.push({
+      loc: new URL(`/product/${encodeURIComponent(String(productId))}`, origin).toString(),
+      imageUrls: group.flatMap((row) => [row.image_url ?? "", ...(Array.isArray(row.additional_images) ? row.additional_images : [])]).filter(Boolean),
+    });
+  }
+  return entries;
+}
+
+async function readActiveCatalogRows(): Promise<SitemapProductRow[]> {
+  const { data, error } = await getSupabaseAdmin().from("products")
+    .select("id,legacy_id,source_id,sku,size_ml,product_type,image_url,additional_images")
+    .eq("is_active", true).in("product_type", ["perfume", "raw_material"])
+    .order("created_at", { ascending: true }).order("id", { ascending: true }).limit(50_000);
+  if (error) throw error;
+  return (data ?? []) as SitemapProductRow[];
+}
 
 router.use("/admin/seo", requireAdmin, (_req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
@@ -145,47 +215,23 @@ router.patch("/admin/seo/settings", async (req, res): Promise<void> => {
 });
 
 async function sitemapXml(path: string, origin: string): Promise<string> {
-  const db = getSupabaseAdmin();
-  const { data, error } = await db.from("seo_discovery_records")
-    .select("canonical_url,page_type,last_modified,image_urls")
-    .eq("is_removed", false).eq("indexable", true).eq("sitemap_included", true)
-    .gte("http_status", 200).lt("http_status", 300).limit(1000);
-  if (error) throw error;
-  const rows = (data ?? []) as Array<{
-    canonical_url: string;
-    page_type: string;
-    last_modified: string | null;
-    image_urls: string[] | null;
-  }>;
-  if (path === "/seo/sitemap.xml" || path === "/seo/sitemap-index.xml") {
-    const lastmod = rows.reduce<string | null>((latest, row) =>
-      row.last_modified && (!latest || row.last_modified > latest) ? row.last_modified : latest, null);
+  const parsedOrigin = new URL(origin);
+  if (parsedOrigin.protocol !== "https:" || parsedOrigin.origin !== origin) {
+    throw new Error("The public sitemap origin must be one HTTPS origin.");
+  }
+  if (path === "/seo/sitemap-index.xml") {
     const childMaps = ["pages-sitemap.xml", "products-sitemap.xml", "images-sitemap.xml"];
     return `<?xml version="1.0" encoding="UTF-8"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${childMaps.map((name) =>
-      `<sitemap><loc>${escapeXml(`${origin}/${name}`)}</loc>${lastmod ? `<lastmod>${escapeXml(lastmod)}</lastmod>` : ""}</sitemap>`,
+      `<sitemap><loc>${escapeXml(`${origin}/${name}`)}</loc></sitemap>`,
     ).join("")}</sitemapindex>`;
   }
-  const kind = path.includes("products-") ? "product" : path.includes("pages-") ? "page" : null;
-  const selected = kind ? rows.filter((row) => row.page_type === kind) : rows;
-  const seen = new Set<string>();
-  const unique = selected.filter((row) => {
-    const url = new URL(row.canonical_url);
-    if (url.origin !== origin || url.hash || seen.has(url.toString())) return false;
-    seen.add(url.toString());
-    return true;
-  });
-  if (path.includes("images-")) {
-    return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${unique.map((row) => {
-      const imageUrls = Array.isArray(row.image_urls) ? row.image_urls : [];
-      const images = [...new Set(imageUrls.filter((image: string) => {
-        try { return new URL(image).protocol === "https:" && !new URL(image).username && !new URL(image).password; } catch { return false; }
-      }))].slice(0, 10);
-      return images.length ? `<url><loc>${escapeXml(row.canonical_url)}</loc>${images.map((image) => `<image:image><image:loc>${escapeXml(image)}</image:loc></image:image>`).join("")}</url>` : "";
-    }).join("")}</urlset>`;
-  }
-  return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${unique.map((row) =>
-    `<url><loc>${escapeXml(row.canonical_url)}</loc>${row.last_modified ? `<lastmod>${escapeXml(row.last_modified)}</lastmod>` : ""}</url>`,
-  ).join("")}</urlset>`;
+  const pageEntries = publicPagePaths.map((page) => ({ loc: new URL(page, origin).toString() }));
+  if (path === "/seo/pages-sitemap.xml") return makeUrlSet(pageEntries);
+
+  const products = activeCatalogEntries(await readActiveCatalogRows(), origin);
+  if (path === "/seo/products-sitemap.xml") return makeUrlSet(products);
+  if (path === "/seo/images-sitemap.xml") return makeUrlSet(products, true);
+  return makeUrlSet([...pageEntries, ...products]);
 }
 
 const publicSitemapPaths = ["/seo/sitemap.xml", "/seo/sitemap-index.xml", "/seo/pages-sitemap.xml", "/seo/products-sitemap.xml", "/seo/images-sitemap.xml"];

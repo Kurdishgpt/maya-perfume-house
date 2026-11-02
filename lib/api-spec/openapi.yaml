@@ -586,6 +586,28 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/RawMaterial" }
+  /raw-materials/{source_id}:
+    get:
+      operationId: getRawMaterialBySourceId
+      tags: [raw-materials]
+      summary: Get one published raw material by its public source ID
+      parameters:
+        - name: source_id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        default: { $ref: "#/components/responses/RawMaterialError" }
+        "200":
+          description: Published raw material.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RawMaterial" }
+        "404":
+          description: No published raw material has this source ID.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
   /admin/raw-materials:
     get:
       operationId: listAdminRawMaterials
