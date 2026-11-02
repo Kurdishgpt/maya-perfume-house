@@ -8,7 +8,16 @@ import { useStore } from '@/lib/store-context';
 import { storePhone, storePhoneHref, whatsappLink } from '@/lib/store';
 
 const menuLinks = [
-  { href: '/contact', key: 'contact' }, { href: '/admin', key: 'admin' },
+  { href: '/', key: 'home' },
+  { href: '/collection', key: 'collection' },
+  { href: '/collection?cat=women', key: 'women' },
+  { href: '/collection?cat=men', key: 'men' },
+  { href: '/collection?cat=unisex', key: 'perfect' },
+  { href: '/raw-material', key: 'ingredients' },
+  { href: '/wishlist', key: 'wishlist' },
+  { href: '/bag', key: 'bags' },
+  { href: '/contact', key: 'contact' },
+  { href: '/admin', key: 'admin' },
 ] as const;
 
 export function Header() {

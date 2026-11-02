@@ -48,6 +48,26 @@ export const LockAdminPasscodeResponse = zod.void()
 
 
 /**
+ * @summary Change the administrator password
+ */
+export const changeAdminPasswordBodyCurrentPasscodeMax = 256;
+
+export const changeAdminPasswordBodyNewPasscodeMin = 12;
+export const changeAdminPasswordBodyNewPasscodeMax = 128;
+
+
+
+export const ChangeAdminPasswordBody = zod.object({
+  "current_passcode": zod.string().min(1).max(changeAdminPasswordBodyCurrentPasscodeMax),
+  "new_passcode": zod.string().min(changeAdminPasswordBodyNewPasscodeMin).max(changeAdminPasswordBodyNewPasscodeMax)
+})
+
+export const ChangeAdminPasswordResponse = zod.object({
+  "updated": zod.boolean()
+})
+
+
+/**
  * @summary Get SEO discovery and sitemap status
  */
 export const GetSeoSummaryResponse = zod.object({

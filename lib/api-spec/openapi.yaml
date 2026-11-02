@@ -94,6 +94,42 @@ paths:
       responses:
         "204":
           description: The passcode unlock was cleared.
+  /admin/change-password:
+    post:
+      operationId: changeAdminPassword
+      tags: [admin]
+      summary: Change the administrator password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPasswordChangeInput"
+      responses:
+        "200":
+          description: Password changed and other administrator sessions revoked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPasswordChangeResponse"
+        "400":
+          description: The new password does not meet requirements.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: The current password was not accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: Password changes are not configured.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /admin/seo/summary:
     get:
       operationId: getSeoSummary
@@ -1297,6 +1333,24 @@ components:
       required: [unlocked]
       properties:
         unlocked:
+          type: boolean
+    AdminPasswordChangeInput:
+      type: object
+      required: [current_passcode, new_passcode]
+      properties:
+        current_passcode:
+          type: string
+          minLength: 1
+          maxLength: 256
+        new_passcode:
+          type: string
+          minLength: 12
+          maxLength: 128
+    AdminPasswordChangeResponse:
+      type: object
+      required: [updated]
+      properties:
+        updated:
           type: boolean
     AutofillFragranceInput:
       type: object

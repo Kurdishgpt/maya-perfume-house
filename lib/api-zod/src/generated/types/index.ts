@@ -8,6 +8,8 @@
 
 export * from './adminPasscodeInput';
 export * from './adminPasscodeStatus';
+export * from './adminPasswordChangeInput';
+export * from './adminPasswordChangeResponse';
 export * from './autofillFragranceInput';
 export * from './contactMessage';
 export * from './contactMessageInput';

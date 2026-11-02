@@ -13,6 +13,7 @@ import {
   getGetAdminPasscodeStatusQueryKey,
   useGetAdminPasscodeStatus,
   useLockAdminPasscode,
+  useChangeAdminPassword,
   useListProducts,
   useRequestUploadUrl,
   useUpdateProduct,
@@ -22,7 +23,7 @@ import type { FragranceSuggestion, Product, ProductInput } from "@workspace/api-
 import {
   AlertTriangle, ArrowDown, ArrowDownUp, ArrowLeft, ArrowRight, Boxes, Check, CheckCircle2, Database,
   ChevronDown, CircleHelp, CloudUpload, Download, ExternalLink, FlaskConical, LayoutDashboard, Loader2, Mail,
-  Menu, Package, Pencil, Plus, Search, SearchCheck, Settings2, Sparkles, Store, Trash2, Upload, X,
+  KeyRound, Menu, Package, Pencil, Plus, Search, SearchCheck, Settings2, Sparkles, Store, Trash2, Upload, X,
 } from "lucide-react";
 
 type Page = "Dashboard" | "Products" | "Raw Materials" | "SEO Discovery" | "Storefront Sync" | "Inbox & Hours" | "Settings";
@@ -431,13 +432,77 @@ function SettingsView({threshold,onThreshold}:{threshold:number;onThreshold:(val
     : "Unavailable";
 
   return <section data-testid="view-settings"><p className="text-[9px] font-semibold uppercase tracking-[.22em] text-[#a9956d]">WORKSPACE PREFERENCES</p><h1 className="mt-2 font-serif text-[36px] text-[#eee9df] md:text-[42px]">Settings</h1><p className="mt-2 max-w-lg text-[12px] leading-5 text-[#8c9691]">Small details that help keep the collection cared for.</p>
-    <div className="mt-8 max-w-[850px] space-y-5"><div className="rounded-lg border border-white/[.07] bg-[#023f44] p-5 md:p-6"><div className="flex gap-4"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#c4ad7c]/20 bg-[#c4ad7c]/[.07] text-[#c4ad7c]"><Package size={17}/></div><div className="flex-1"><h2 className="font-serif text-xl text-[#e7e2d7]">Low-stock reminder</h2><p className="mt-1 max-w-lg text-[11px] leading-5 text-[#87918c]">Flag fragrances when available inventory reaches this number or lower. Preference is saved in this browser.</p><div className="mt-5 flex flex-wrap items-center gap-3"><label htmlFor="low-stock-threshold" className="text-[10px] uppercase tracking-[.12em] text-[#aab1aa]">Remind me at</label><input id="low-stock-threshold" type="number" min="0" max="9999" value={threshold} onChange={e=>onThreshold(e.target.value)} className="h-10 w-24 rounded-md border border-white/10 bg-[#00262a] px-3 font-mono text-sm text-[#e5e0d5] outline-none focus:border-[#b9a274]/60" data-testid="input-low-stock-threshold"/><span className="text-[10px] text-[#7c8781]">units remaining</span><span className="ml-auto inline-flex items-center gap-1.5 text-[9px] text-[#a9b9a4]" data-testid="status-preference-saved"><Check size={12}/>Saved automatically</span></div></div></div></div>
+    <div className="mt-8 max-w-[850px] space-y-5"><ChangeAdminPasswordForm/><div className="rounded-lg border border-white/[.07] bg-[#023f44] p-5 md:p-6"><div className="flex gap-4"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#c4ad7c]/20 bg-[#c4ad7c]/[.07] text-[#c4ad7c]"><Package size={17}/></div><div className="flex-1"><h2 className="font-serif text-xl text-[#e7e2d7]">Low-stock reminder</h2><p className="mt-1 max-w-lg text-[11px] leading-5 text-[#87918c]">Flag fragrances when available inventory reaches this number or lower. Preference is saved in this browser.</p><div className="mt-5 flex flex-wrap items-center gap-3"><label htmlFor="low-stock-threshold" className="text-[10px] uppercase tracking-[.12em] text-[#aab1aa]">Remind me at</label><input id="low-stock-threshold" type="number" min="0" max="9999" value={threshold} onChange={e=>onThreshold(e.target.value)} className="h-10 w-24 rounded-md border border-white/10 bg-[#00262a] px-3 font-mono text-sm text-[#e5e0d5] outline-none focus:border-[#b9a274]/60" data-testid="input-low-stock-threshold"/><span className="text-[10px] text-[#7c8781]">units remaining</span><span className="ml-auto inline-flex items-center gap-1.5 text-[9px] text-[#a9b9a4]" data-testid="status-preference-saved"><Check size={12}/>Saved automatically</span></div></div></div></div>
       <div className="rounded-lg border border-white/[.07] bg-[#023f44] p-5 md:p-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-start"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#c4ad7c]/20 bg-[#c4ad7c]/[.07] text-[#c4ad7c]"><Database size={17}/></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-3"><h2 className="font-serif text-xl text-[#e7e2d7]">Supabase database</h2><span className={`rounded-full border px-2.5 py-1 text-[9px] uppercase tracking-[.1em] ${supabaseStatus.status === "connected" ? "border-[#89a78e]/25 text-[#aac2a6]" : "border-[#bd886a]/25 text-[#d4a687]"}`} data-testid="status-supabase-connection">{connectionLabel}</span></div><p className="mt-2 max-w-xl text-[11px] leading-5 text-[#87918c]">{supabaseStatus.message ?? "Check the server-side Supabase connection before moving catalog data."}</p><div className="mt-4 flex flex-wrap gap-2"><button type="button" onClick={() => void checkSupabase()} disabled={checkingSupabase} className="rounded-md border border-white/10 px-3 py-2 text-[9px] uppercase tracking-[.1em] text-[#c6cbc5] disabled:opacity-50" data-testid="button-check-supabase">{checkingSupabase ? "Checking…" : "Check connection"}</button><button type="button" onClick={() => void migrateLegacyData()} disabled={migrating || supabaseStatus.status !== "connected"} className="inline-flex items-center gap-2 rounded-md bg-[#D9AD45] px-3 py-2 text-[9px] font-semibold uppercase tracking-[.1em] text-[#1b201f] disabled:cursor-not-allowed disabled:opacity-40" data-testid="button-migrate-supabase">{migrating ? <><Loader2 size={12} className="animate-spin"/>Copying records…</> : "Copy existing store data"}</button></div><p className="mt-3 text-[10px] leading-5 text-[#a8b2aa]">This copies existing products, raw materials, import history, contact messages, and store hours. It never deletes the source records or overwrites existing Supabase catalog entries. Supplier availability is kept separate from Maya’s stock.</p>{migrationError&&<p className="mt-3 text-[11px] text-[#f0c2b6]" role="alert" data-testid="text-supabase-migration-error">{migrationError}</p>}{migrationResult&&<div className="mt-4 rounded-md border border-white/[.08] bg-[#002b2f] p-3 text-[10px] leading-5 text-[#d4d8cf]" role="status" data-testid="state-supabase-migration-result"><p>{migrationResult.complete ? "Transfer complete." : "Transfer finished with some errors."} New records: {Object.values(migrationResult.inserted_counts).reduce((a,b)=>a+b,0)}. Existing/duplicate records: {Object.values(migrationResult.duplicate_or_existing_counts).reduce((a,b)=>a+b,0)}.</p>{migrationResult.errors.length>0&&<ul className="mt-2 list-disc pl-4 text-[#d4a687]">{migrationResult.errors.map((item,index)=><li key={`${item.record}-${index}`}>{item.record}: {item.reason}</li>)}</ul>}</div>}</div></div></div>
       <CatalogCsvTools enabled={supabaseStatus.status === "connected"}/>
       <div className="rounded-lg border border-white/[.07] bg-[#023f44] p-5 md:p-6"><div className="flex gap-4"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/10 text-[#a7ada5]"><Store size={17}/></div><div><h2 className="font-serif text-xl text-[#e7e2d7]">Store identity</h2><p className="mt-1 text-[11px] text-[#87918c]">This workspace is connected to the Maya Collection storefront.</p><div className="mt-4 flex items-center gap-2 text-[10px] text-[#b6c4b1]" data-testid="status-settings-connection"><span className="h-1.5 w-1.5 rounded-full bg-[#92ad92]"/>Catalog connection active</div></div></div></div>
       <div className="flex gap-3 rounded-lg border border-[#c4ad7c]/15 bg-[#c4ad7c]/[.04] p-4"><CircleHelp size={15} className="mt-0.5 shrink-0 text-[#bba779]"/><p className="text-[10px] leading-5 text-[#929991]">Preferences here are local to this browser. No additional catalog records are created.</p></div>
     </div>
   </section>;
+}
+
+function ChangeAdminPasswordForm() {
+  const changePassword = useChangeAdminPassword();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+    if (newPassword !== confirmPassword) {
+      setError("The new passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 12) {
+      setError("Use at least 12 characters for the new password.");
+      return;
+    }
+    try {
+      await changePassword.mutateAsync({
+        data: { current_passcode: currentPassword, new_passcode: newPassword },
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setSuccess("Password changed. Other administrator sessions have been signed out.");
+    } catch (cause) {
+      const apiMessage = (cause as { data?: { error?: string } })?.data?.error;
+      setError(apiMessage || errText(cause));
+    } finally {
+      changePassword.reset();
+    }
+  };
+
+  const inputClass = "mt-1.5 h-10 w-full rounded-md border border-white/10 bg-[#00262a] px-3 text-xs text-[#e7e4dc] outline-none placeholder:text-[#66716b] focus:border-[#b9a274]/60";
+  return <form onSubmit={(event) => void submit(event)} className="rounded-lg border border-white/[.07] bg-[#023f44] p-5 md:p-6" data-testid="form-change-admin-password">
+    <div className="flex gap-4">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#c4ad7c]/20 bg-[#c4ad7c]/[.07] text-[#c4ad7c]"><KeyRound size={17}/></div>
+      <div className="min-w-0 flex-1">
+        <h2 className="font-serif text-xl text-[#e7e2d7]">Change administrator password</h2>
+        <p className="mt-1 max-w-xl text-[11px] leading-5 text-[#87918c]">Use at least 12 characters. Other administrator sessions are signed out after the change.</p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <label className="text-[10px] uppercase tracking-[.1em] text-[#aab1aa] sm:col-span-2" htmlFor="admin-current-password">Current password
+            <input id="admin-current-password" className={inputClass} type="password" autoComplete="current-password" minLength={1} maxLength={256} required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} data-testid="input-admin-current-password"/>
+          </label>
+          <label className="text-[10px] uppercase tracking-[.1em] text-[#aab1aa]" htmlFor="admin-new-password">New password
+            <input id="admin-new-password" className={inputClass} type="password" autoComplete="new-password" minLength={12} maxLength={128} required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} data-testid="input-admin-new-password"/>
+          </label>
+          <label className="text-[10px] uppercase tracking-[.1em] text-[#aab1aa]" htmlFor="admin-confirm-password">Confirm new password
+            <input id="admin-confirm-password" className={inputClass} type="password" autoComplete="new-password" minLength={12} maxLength={128} required value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} data-testid="input-admin-confirm-password"/>
+          </label>
+        </div>
+        {error && <p className="mt-3 text-[11px] text-[#f0c2b6]" role="alert" data-testid="text-admin-password-error">{error}</p>}
+        {success && <p className="mt-3 text-[11px] text-[#a9c3a8]" role="status" data-testid="text-admin-password-success">{success}</p>}
+        <button type="submit" disabled={changePassword.isPending} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-[#D9AD45] px-4 py-2 text-[9px] font-semibold uppercase tracking-[.1em] text-[#1b201f] disabled:cursor-not-allowed disabled:opacity-50" data-testid="button-change-admin-password">
+          {changePassword.isPending ? <><Loader2 size={13} className="animate-spin"/>Updating…</> : "Change password"}
+        </button>
+      </div>
+    </div>
+  </form>;
 }
 
 function CatalogCsvTools({ enabled }: { enabled: boolean }) {

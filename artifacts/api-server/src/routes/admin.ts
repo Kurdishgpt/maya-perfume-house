@@ -1,12 +1,16 @@
 import { Router, type IRouter } from "express";
 import {
+  ChangeAdminPasswordBody,
+  ChangeAdminPasswordResponse,
   GetAdminPasscodeStatusResponse,
   UnlockAdminPasscodeBody,
   UnlockAdminPasscodeResponse,
 } from "@workspace/api-zod";
+import { changeAdminPassword, verifyAdminPassword } from "../lib/adminPassword";
 import {
   clearAdminPasscodeCookie,
   isAdminPasscodeUnlocked,
+  requireAdmin,
   setAdminPasscodeCookie,
   verifyAdminPasscode,
 } from "../middlewares/requireAdmin";
@@ -20,22 +24,29 @@ router.use("/admin/passcode", (_req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
   next();
 });
+router.use("/admin/change-password", (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
 
-router.get("/admin/passcode", (req, res): void => {
+router.get("/admin/passcode", async (req, res): Promise<void> => {
   if (!process.env.SESSION_SECRET) {
     req.log.error("Admin session signing is not configured");
     res.status(503).json({ error: "Admin access is not configured." });
     return;
   }
 
-  res.json(
-    GetAdminPasscodeStatusResponse.parse({
-      unlocked: isAdminPasscodeUnlocked(req),
-    }),
-  );
+  try {
+    res.json(GetAdminPasscodeStatusResponse.parse({
+      unlocked: await isAdminPasscodeUnlocked(req),
+    }));
+  } catch (error) {
+    req.log.error({ err: error }, "Could not read administrator session status");
+    res.status(503).json({ error: "Admin access could not be checked." });
+  }
 });
 
-router.post("/admin/passcode", (req, res): void => {
+router.post("/admin/passcode", async (req, res): Promise<void> => {
   const parsed = UnlockAdminPasscodeBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Enter the admin passphrase." });
@@ -59,7 +70,19 @@ router.post("/admin/passcode", (req, res): void => {
       ? current
       : { count: 0, startedAt: now };
 
-  if (!verifyAdminPasscode(parsed.data.passcode)) {
+  let verification: Awaited<ReturnType<typeof verifyAdminPassword>>;
+  try {
+    verification = await verifyAdminPassword(
+      parsed.data.passcode,
+      () => verifyAdminPasscode(parsed.data.passcode),
+    );
+  } catch (error) {
+    req.log.error({ err: error }, "Could not verify administrator passcode");
+    res.status(503).json({ error: "Admin access could not be checked." });
+    return;
+  }
+
+  if (!verification.valid) {
     attempts.count += 1;
     failedAttempts.set(clientIp, attempts);
     res.status(403).json({ error: "That passphrase was not accepted." });
@@ -67,11 +90,43 @@ router.post("/admin/passcode", (req, res): void => {
   }
 
   failedAttempts.delete(clientIp);
-  if (!setAdminPasscodeCookie(res)) {
+  if (!setAdminPasscodeCookie(res, verification.sessionRevision)) {
     res.status(503).json({ error: "Admin access is not configured." });
     return;
   }
   res.json(UnlockAdminPasscodeResponse.parse({ unlocked: true }));
+});
+
+router.post("/admin/change-password", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = ChangeAdminPasswordBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Enter a new password with at least 12 characters." });
+    return;
+  }
+  if (parsed.data.current_passcode === parsed.data.new_passcode) {
+    res.status(400).json({ error: "Choose a password different from the current one." });
+    return;
+  }
+
+  try {
+    const revision = await changeAdminPassword(
+      parsed.data.current_passcode,
+      parsed.data.new_passcode,
+      () => verifyAdminPasscode(parsed.data.current_passcode),
+    );
+    if (revision === null) {
+      res.status(403).json({ error: "The current administrator password was not accepted." });
+      return;
+    }
+    if (!setAdminPasscodeCookie(res, revision)) {
+      res.status(503).json({ error: "Admin access is not configured." });
+      return;
+    }
+    res.json(ChangeAdminPasswordResponse.parse({ updated: true }));
+  } catch (error) {
+    req.log.error({ err: error }, "Could not change administrator password");
+    res.status(503).json({ error: "Password changes are unavailable until the administrator security migration is applied." });
+  }
 });
 
 router.delete("/admin/passcode", (_req, res): void => {

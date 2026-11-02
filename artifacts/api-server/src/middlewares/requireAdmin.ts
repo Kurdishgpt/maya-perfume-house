@@ -1,11 +1,12 @@
 import { createHmac, createHash, timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
+import { getAdminSessionRevision } from "../lib/adminPassword";
 
 const passcodeCookieName = "maya_admin_unlock";
 const passcodeCookieMaxAge = 30 * 60;
 
-function signPasscodeUnlock(expiresAt: number, secret: string): string {
-  return createHmac("sha256", secret).update(String(expiresAt)).digest("base64url");
+function signPasscodeUnlock(expiresAt: number, revision: number, secret: string): string {
+  return createHmac("sha256", secret).update(`${expiresAt}.${revision}`).digest("base64url");
 }
 
 function readCookie(req: Request): string | undefined {
@@ -16,31 +17,34 @@ function readCookie(req: Request): string | undefined {
     ?.slice(passcodeCookieName.length + 1);
 }
 
-export function isAdminPasscodeUnlocked(req: Request): boolean {
+export async function isAdminPasscodeUnlocked(req: Request): Promise<boolean> {
   const secret = process.env.SESSION_SECRET;
   const token = readCookie(req);
   if (!secret || !token) return false;
 
-  const separator = token.indexOf(".");
-  if (separator < 1) return false;
-  const expiresAt = Number(token.slice(0, separator));
-  const signature = token.slice(separator + 1);
-  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now()) return false;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  const [expiresText, revisionText, signature] = parts;
+  const expiresAt = Number(expiresText);
+  const revision = Number(revisionText);
+  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Date.now()
+    || !Number.isSafeInteger(revision) || revision < 0) return false;
   if (!/^[A-Za-z0-9_-]{43}$/.test(signature)) return false;
 
-  const expected = Buffer.from(signPasscodeUnlock(expiresAt, secret), "base64url");
+  const expected = Buffer.from(signPasscodeUnlock(expiresAt, revision, secret), "base64url");
   const received = Buffer.from(signature, "base64url");
-  return expected.length === received.length && timingSafeEqual(expected, received);
+  if (expected.length !== received.length || !timingSafeEqual(expected, received)) return false;
+  return revision === await getAdminSessionRevision();
 }
 
-export function setAdminPasscodeCookie(res: Response): boolean {
+export function setAdminPasscodeCookie(res: Response, revision = 0): boolean {
   const secret = process.env.SESSION_SECRET;
   if (!secret) return false;
 
   const expiresAt = Date.now() + passcodeCookieMaxAge * 1000;
-  const signature = signPasscodeUnlock(expiresAt, secret);
+  const signature = signPasscodeUnlock(expiresAt, revision, secret);
   const cookieParts = [
-    `${passcodeCookieName}=${expiresAt}.${signature}`,
+    `${passcodeCookieName}=${expiresAt}.${revision}.${signature}`,
     "Path=/api",
     "HttpOnly",
     "SameSite=Strict",
@@ -71,15 +75,20 @@ export function verifyAdminPasscode(received: string): boolean {
   return timingSafeEqual(receivedDigest, expectedDigest);
 }
 
-export function requireAdmin(
+export async function requireAdmin(
   req: Request,
   res: Response,
   next: NextFunction,
-): void {
-  if (!isAdminPasscodeUnlocked(req)) {
+): Promise<void> {
+  try {
+    if (await isAdminPasscodeUnlocked(req)) {
+      next();
+      return;
+    }
     res.status(401).json({ error: "Unlock the admin panel before changing the catalog." });
+  } catch (error) {
+    req.log.error({ err: error }, "Could not verify administrator session");
+    res.status(503).json({ error: "Administrator access could not be checked." });
     return;
   }
-
-  next();
 }

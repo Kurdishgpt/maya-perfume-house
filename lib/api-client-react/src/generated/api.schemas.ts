@@ -552,6 +552,23 @@ export interface AdminPasscodeStatus {
   unlocked: boolean;
 }
 
+export interface AdminPasswordChangeInput {
+  /**
+     * @minLength 1
+     * @maxLength 256
+     */
+  current_passcode: string;
+  /**
+     * @minLength 12
+     * @maxLength 128
+     */
+  new_passcode: string;
+}
+
+export interface AdminPasswordChangeResponse {
+  updated: boolean;
+}
+
 export interface AutofillFragranceInput {
   /**
      * @minLength 2

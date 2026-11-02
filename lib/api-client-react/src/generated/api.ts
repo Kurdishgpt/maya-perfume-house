@@ -27,6 +27,8 @@ import type {
 import type {
   AdminPasscodeInput,
   AdminPasscodeStatus,
+  AdminPasswordChangeInput,
+  AdminPasswordChangeResponse,
   AutofillFragranceInput,
   ContactMessage,
   ContactMessageInput,
@@ -454,6 +456,94 @@ export const useLockAdminPasscode = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getLockAdminPasscodeMutationOptions(options), queryClient);
+    }
+
+export const getChangeAdminPasswordUrl = () => {
+
+
+
+
+  return `/api/admin/change-password`
+}
+
+/**
+ * @summary Change the administrator password
+ */
+export const changeAdminPassword = async (adminPasswordChangeInput: AdminPasswordChangeInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminPasswordChangeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminPasswordChangeResponse>(getChangeAdminPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminPasswordChangeInput)
+  }
+);}
+
+
+
+
+
+export const getChangeAdminPasswordMutationKey = () => ['changeAdminPassword'] as const;
+
+export const getChangeAdminPasswordMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAdminPassword>>, TError,ChangeAdminPasswordMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeAdminPassword>>, TError,ChangeAdminPasswordMutationVariables, TContext> => {
+
+const mutationKey = getChangeAdminPasswordMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeAdminPassword>>, ChangeAdminPasswordMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  changeAdminPassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeAdminPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof changeAdminPassword>>>
+    export type ChangeAdminPasswordMutationBody = BodyType<AdminPasswordChangeInput>
+    export type ChangeAdminPasswordMutationError = ErrorType<ErrorEnvelope>
+    export type ChangeAdminPasswordMutationVariables = {data: BodyType<AdminPasswordChangeInput>}
+
+    /**
+ * @summary Change the administrator password
+ */
+export const useChangeAdminPassword = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAdminPassword>>, TError,ChangeAdminPasswordMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof changeAdminPassword>>,
+        TError,
+        ChangeAdminPasswordMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeAdminPasswordMutationOptions(options), queryClient);
     }
 
 export const getGetSeoSummaryUrl = () => {

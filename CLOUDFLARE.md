@@ -46,6 +46,15 @@ to use. Do not put the passcode or service-role key in this repository.
 The Supabase image bucket `maya-product-images` must exist. Keep the service-role
 key private; only the public anon key belongs in the browser build.
 
+## Administrator password changes
+
+Apply `supabase/migrations/202611020002_admin_password_settings.sql` to the same
+Supabase project to enable **Admin → Settings → Change administrator password**.
+The configured Worker `ADMIN_PANEL_PASSWORD` remains the initial password until
+the administrator changes it. The replacement is stored only as a salted
+PBKDF2 hash in the private `admin_auth_settings` table. Changing it signs out
+other administrator sessions; the current session receives a new unlock cookie.
+
 ## Cloudflare-specific limits
 
 Legacy image URLs served from Replit Object Storage are not available in a
