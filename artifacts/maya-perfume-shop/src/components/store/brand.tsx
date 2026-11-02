@@ -11,7 +11,9 @@ export function Crown({ className = '' }: { className?: string }) {
 
 export function Wordmark({ compact = false, href = '/' }: { compact?: boolean; href?: string }) {
   return <Link href={href} className={`mc-wordmark ${compact ? 'is-compact' : ''}`} data-testid="link-brand" dir="ltr">
-    <img src="/images/reference/maya-gold-logo.png" alt="MAYA COLLECTION"/>
+    <img src="/images/maya-emblem.png" alt="" aria-hidden="true"/>
+    <span className="mc-wordmark-name">MAYA</span>
+    <span className="mc-wordmark-sub">COLLECTION</span>
   </Link>;
 }
 

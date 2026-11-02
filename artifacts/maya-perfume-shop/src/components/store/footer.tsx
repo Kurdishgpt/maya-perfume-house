@@ -16,7 +16,11 @@ export function Footer() {
   const { t, language, setLanguage } = useStore();
   return <footer className="mc-foot">
     <div className="mc-foot-inner">
-      <Link href="/" className="mc-foot-logo" aria-label="MAYA COLLECTION" data-testid="link-footer-logo"><img src="/images/reference/maya-gold-logo.png" alt="MAYA COLLECTION" dir="ltr"/></Link>
+      <Link href="/" className="mc-foot-logo" aria-label="MAYA COLLECTION" data-testid="link-footer-logo" dir="ltr">
+        <img src="/images/maya-emblem.png" alt="" aria-hidden="true"/>
+        <span className="mc-wordmark-name">MAYA</span>
+        <span className="mc-wordmark-sub">COLLECTION</span>
+      </Link>
       <div className="mc-foot-acc">
         <Section title={t('language')} id="language">
           <div className="mc-foot-langs">{languages.map((l) => <button key={l.code} onClick={() => setLanguage(l.code)} className={l.code === language ? 'is-active' : ''} aria-pressed={l.code === language} data-testid={`footer-language-${l.code}`}>{l.label}</button>)}</div>

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { ArrowRight } from 'lucide-react';
-import { Crown } from '@/components/store/brand';
 import { useStore } from '@/lib/store-context';
 
 export default function Welcome() {
@@ -18,7 +17,7 @@ export default function Welcome() {
       onError={(e) => { const el = e.currentTarget; if (!el.dataset.fb) { el.dataset.fb = '1'; el.src = '/images/welcome-signature.jpg'; } }}/>
     <div className="mc-wel-shade"/>
     <div className="mc-wel-top">
-      <div className="mc-wel-brand" dir="ltr"><span/><Crown className="mc-wel-crown"/><strong>MAYA COLLECTION</strong><span/></div>
+      <div className="mc-wel-brand" dir="ltr"><span/><img src="/images/maya-emblem.png" alt="" className="mc-wel-emblem"/><strong>MAYA COLLECTION</strong><span/></div>
       <h1><span>{t('welcomeTitle1')}</span><em>{t('welcomeTitle2')}</em></h1>
       <p>{t('welcomeBody')}</p>
     </div>

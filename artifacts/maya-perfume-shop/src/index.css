@@ -361,12 +361,12 @@ button, a, input, textarea, select { -webkit-tap-highlight-color:transparent; }
 
 /* Brand */
 .mc-wordmark { display:inline-flex; flex-direction:column; align-items:center; line-height:1; color:var(--mc-champ)!important; }
-.mc-wordmark img { display:block; width:88px; height:88px; object-fit:contain; mix-blend-mode:lighten; }
+.mc-wordmark img { display:block; width:76px; height:42px; object-fit:contain; }
 .mc-wordmark-crown { width:30px; height:21px; color:var(--mc-gold); margin-bottom:3px; }
-.mc-wordmark-name { font-family:var(--mc-display); font-size:22px; letter-spacing:.32em; padding-inline-start:.32em; font-weight:600;
+.mc-wordmark-name { font-family:var(--mc-display); font-size:19px; letter-spacing:.22em; padding-inline-start:.22em; font-weight:600;
   background:linear-gradient(180deg,#F7E3B0 0%,#D9AD45 60%,#b8892a 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.mc-wordmark-sub { font-family:var(--mc-sans); font-size:8px; letter-spacing:.42em; padding-inline-start:.42em; margin-top:4px; color:var(--mc-champ); font-weight:600; }
-.mc-wordmark.is-compact img { width:88px; height:88px; }
+.mc-wordmark-sub { font-family:var(--mc-sans); font-size:7px; letter-spacing:.34em; padding-inline-start:.34em; margin-top:2px; color:var(--mc-champ); font-weight:600; }
+.mc-wordmark.is-compact img { width:76px; height:42px; }
 .mc-divider { display:flex; align-items:center; gap:10px; color:var(--mc-gold); margin:14px auto 0; max-width:340px; }
 .mc-divider span { flex:1; height:1px; background:linear-gradient(90deg,transparent,var(--mc-gold)); }
 .mc-divider span:last-child { background:linear-gradient(270deg,transparent,var(--mc-gold)); }
@@ -753,7 +753,7 @@ button, a, input, textarea, select { -webkit-tap-highlight-color:transparent; }
 }
 @media (min-width:900px) {
   .mc-header { height:76px; padding:0 28px; }
-  .mc-wordmark.is-compact .mc-wordmark-name { font-size:24px; }
+  .mc-wordmark.is-compact .mc-wordmark-name { font-size:19px; }
   .mc-page { padding:28px 32px 48px; }
   .mc-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px; }
   .mc-home .mc-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -952,7 +952,7 @@ button, a, input, textarea, select { -webkit-tap-highlight-color:transparent; }
 .mc-wel-top { position:relative; text-align:center; padding:calc(22px + env(safe-area-inset-top,0px)) 18px 0; }
 .mc-wel-brand { display:flex; align-items:center; justify-content:center; gap:9px; width:max-content; max-width:calc(100% - 12px); min-height:46px; margin:0 auto; padding:8px 12px; border:1px solid #d9b56a; border-radius:999px; background:linear-gradient(180deg,#0a3b45,#073039); box-shadow:0 8px 22px -12px #000c,inset 0 1px 0 #ffffff24; }
 .mc-wel-brand > span { width:min(13vw,72px); height:1px; background:#d9b56a; }
-.mc-wel-crown { width:30px; height:22px; color:#e2b958; }
+.mc-wel-emblem { width:36px; height:30px; object-fit:contain; }
 .mc-wel-brand strong { font-family:'Cinzel',serif; font-weight:600; font-size:clamp(13px,3.6vw,26px); letter-spacing:.04em; color:#f1d48f; white-space:nowrap; }
 .mc-wel h1 { margin:clamp(18px,4vh,32px) 0 10px; font-family:'Cormorant Garamond',serif; font-weight:600; line-height:1.02; text-shadow:0 3px 18px #1d140a88; }
 [dir='rtl'] .mc-wel h1 { font-family:var(--mc-serif); }
@@ -972,8 +972,10 @@ button, a, input, textarea, select { -webkit-tap-highlight-color:transparent; }
 /* ===== Footer: reference-matched ===== */
 .mc-foot { margin-top:20px; color:#e8bf62; background:var(--mc-footer-background); padding-bottom:calc(var(--mc-nav-h) + var(--mc-safe-b) + 22px); }
 .mc-foot-inner { max-width:500px; margin:0 auto; padding:36px 28px 26px; }
-.mc-foot-logo { display:flex; justify-content:center; margin-bottom:20px; }
-.mc-foot-logo img { width:min(64%,250px); height:auto; filter:drop-shadow(0 6px 14px #0006); }
+.mc-foot-logo { display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom:20px; text-decoration:none; }
+.mc-foot-logo img { width:146px; height:78px; object-fit:contain; filter:drop-shadow(0 6px 14px #0006); }
+.mc-foot-logo .mc-wordmark-name { font-size:30px; }
+.mc-foot-logo .mc-wordmark-sub { font-size:9px; letter-spacing:.44em; padding-inline-start:.44em; }
 .mc-foot-acc { border-top:0; }
 .mc-facc { border-bottom:1px solid #c9a55c80; }
 .mc-facc summary { list-style:none; display:flex; align-items:center; justify-content:space-between; min-height:62px; padding:0 14px 0 14px; cursor:pointer; font-size:clamp(17px,4.4vw,20px); font-weight:500; color:#f0d08c; }
