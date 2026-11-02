@@ -86,3 +86,5 @@ alter table public.seo_crawl_settings enable row level security;
 grant select, insert, update, delete on public.seo_crawl_runs to service_role;
 grant select, insert, update, delete on public.seo_discovery_records to service_role;
 grant select, insert, update, delete on public.seo_crawl_settings to service_role;
+
+notify pgrst, 'reload schema';
