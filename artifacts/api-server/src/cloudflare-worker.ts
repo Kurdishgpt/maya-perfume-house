@@ -1,5 +1,6 @@
 import type { Request as ExpressRequest, Response as ExpressResponse } from "express";
 import app from "./cloudflare-app";
+import { scheduledSeoTick } from "./lib/seoCrawler";
 
 interface CloudflareEnvironment {
   ASSETS: {
@@ -329,6 +330,17 @@ async function runExpressRequest(request: Request, url: URL): Promise<Response> 
 export default {
   async fetch(request: Request, env: CloudflareEnvironment): Promise<Response> {
     const url = new URL(request.url);
+    const sitemapPath = new Map([
+      ["/sitemap.xml", "/api/seo/sitemap.xml"],
+      ["/sitemap-index.xml", "/api/seo/sitemap-index.xml"],
+      ["/pages-sitemap.xml", "/api/seo/pages-sitemap.xml"],
+      ["/products-sitemap.xml", "/api/seo/products-sitemap.xml"],
+      ["/images-sitemap.xml", "/api/seo/images-sitemap.xml"],
+    ]).get(url.pathname);
+    if (sitemapPath) {
+      const apiUrl = new URL(sitemapPath, url.origin);
+      return runExpressRequest(request, apiUrl);
+    }
     if (!url.pathname.startsWith("/api/") && url.pathname !== "/api") {
       return env.ASSETS.fetch(request);
     }
@@ -342,5 +354,14 @@ export default {
       noOpLogger.error(error);
       return Response.json({ error: "The request could not be completed." }, { status: 500 });
     }
+  },
+  scheduled(
+    _controller: { scheduledTime: number; cron: string },
+    _env: CloudflareEnvironment,
+    ctx: { waitUntil(promise: Promise<unknown>): void },
+  ) {
+    ctx.waitUntil(scheduledSeoTick().catch((error) => {
+      console.error("[Cloudflare SEO cron]", error instanceof Error ? error.message : "scheduled crawl failed");
+    }));
   },
 };

@@ -40,6 +40,7 @@ import type {
   HealthStatus,
   HillenCategory,
   HillenMaterialInput,
+  ListSeoRecordsParams,
   OrderCheckoutConfirmation,
   OrderCheckoutInput,
   Product,
@@ -52,6 +53,13 @@ import type {
   RawMaterialQuery,
   RawMaterialResearch,
   RawMaterialUpdate,
+  SeoCrawlHistory,
+  SeoCrawlRun,
+  SeoErrorResponse,
+  SeoRecordsPage,
+  SeoSettings,
+  SeoSettingsInput,
+  SeoSummary,
   UploadUrlRequest,
   UploadUrlResponse
 } from './api.schemas';
@@ -447,6 +455,956 @@ export const useLockAdminPasscode = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getLockAdminPasscodeMutationOptions(options), queryClient);
     }
+
+export const getGetSeoSummaryUrl = () => {
+
+
+
+
+  return `/api/admin/seo/summary`
+}
+
+/**
+ * @summary Get SEO discovery and sitemap status
+ */
+export const getSeoSummary = async ( options?: Parameters<typeof customFetch>[1]): Promise<SeoSummary> => {
+
+  return customFetch<SeoSummary>(getGetSeoSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSeoSummaryQueryKey = () => {
+    return [
+    `/api/admin/seo/summary`
+    ] as const;
+    }
+
+
+export const getGetSeoSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getSeoSummary>>, TError = ErrorType<SeoErrorResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSeoSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSeoSummary>>> = ({ signal }) => getSeoSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSeoSummary>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSeoSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getSeoSummary>>>
+export type GetSeoSummaryQueryError = ErrorType<SeoErrorResponse>
+
+
+export function useGetSeoSummary<TData = Awaited<ReturnType<typeof getSeoSummary>>, TError = ErrorType<SeoErrorResponse>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoSummary>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSeoSummary>>,
+          TError,
+          Awaited<ReturnType<typeof getSeoSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSeoSummary<TData = Awaited<ReturnType<typeof getSeoSummary>>, TError = ErrorType<SeoErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoSummary>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSeoSummary>>,
+          TError,
+          Awaited<ReturnType<typeof getSeoSummary>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSeoSummary<TData = Awaited<ReturnType<typeof getSeoSummary>>, TError = ErrorType<SeoErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get SEO discovery and sitemap status
+ */
+
+export function useGetSeoSummary<TData = Awaited<ReturnType<typeof getSeoSummary>>, TError = ErrorType<SeoErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoSummary>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSeoSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSeoRecordsUrl = (params?: ListSeoRecordsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/seo/records?${stringifiedParams}` : `/api/admin/seo/records`
+}
+
+/**
+ * @summary Search and filter discovered pages and products
+ */
+export const listSeoRecords = async (params?: ListSeoRecordsParams, options?: Parameters<typeof customFetch>[1]): Promise<SeoRecordsPage> => {
+
+  return customFetch<SeoRecordsPage>(getListSeoRecordsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSeoRecordsQueryKey = (params?: ListSeoRecordsParams,) => {
+    return [
+    `/api/admin/seo/records`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSeoRecordsQueryOptions = <TData = Awaited<ReturnType<typeof listSeoRecords>>, TError = ErrorType<SeoErrorResponse>>(params?: ListSeoRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSeoRecords>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSeoRecordsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSeoRecords>>> = ({ signal }) => listSeoRecords(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSeoRecords>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListSeoRecordsQueryResult = NonNullable<Awaited<ReturnType<typeof listSeoRecords>>>
+export type ListSeoRecordsQueryError = ErrorType<SeoErrorResponse>
+
+
+export function useListSeoRecords<TData = Awaited<ReturnType<typeof listSeoRecords>>, TError = ErrorType<SeoErrorResponse>>(
+ params: undefined |  ListSeoRecordsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSeoRecords>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSeoRecords>>,
+          TError,
+          Awaited<ReturnType<typeof listSeoRecords>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSeoRecords<TData = Awaited<ReturnType<typeof listSeoRecords>>, TError = ErrorType<SeoErrorResponse>>(
+ params?: ListSeoRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSeoRecords>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSeoRecords>>,
+          TError,
+          Awaited<ReturnType<typeof listSeoRecords>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSeoRecords<TData = Awaited<ReturnType<typeof listSeoRecords>>, TError = ErrorType<SeoErrorResponse>>(
+ params?: ListSeoRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSeoRecords>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Search and filter discovered pages and products
+ */
+
+export function useListSeoRecords<TData = Awaited<ReturnType<typeof listSeoRecords>>, TError = ErrorType<SeoErrorResponse>>(
+ params?: ListSeoRecordsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSeoRecords>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListSeoRecordsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSeoCrawlsUrl = () => {
+
+
+
+
+  return `/api/admin/seo/crawls`
+}
+
+/**
+ * @summary List crawl history
+ */
+export const listSeoCrawls = async ( options?: Parameters<typeof customFetch>[1]): Promise<SeoCrawlHistory> => {
+
+  return customFetch<SeoCrawlHistory>(getListSeoCrawlsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSeoCrawlsQueryKey = () => {
+    return [
+    `/api/admin/seo/crawls`
+    ] as const;
+    }
+
+
+export const getListSeoCrawlsQueryOptions = <TData = Awaited<ReturnType<typeof listSeoCrawls>>, TError = ErrorType<SeoErrorResponse>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSeoCrawls>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSeoCrawlsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSeoCrawls>>> = ({ signal }) => listSeoCrawls({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSeoCrawls>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListSeoCrawlsQueryResult = NonNullable<Awaited<ReturnType<typeof listSeoCrawls>>>
+export type ListSeoCrawlsQueryError = ErrorType<SeoErrorResponse>
+
+
+export function useListSeoCrawls<TData = Awaited<ReturnType<typeof listSeoCrawls>>, TError = ErrorType<SeoErrorResponse>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSeoCrawls>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSeoCrawls>>,
+          TError,
+          Awaited<ReturnType<typeof listSeoCrawls>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSeoCrawls<TData = Awaited<ReturnType<typeof listSeoCrawls>>, TError = ErrorType<SeoErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSeoCrawls>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listSeoCrawls>>,
+          TError,
+          Awaited<ReturnType<typeof listSeoCrawls>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListSeoCrawls<TData = Awaited<ReturnType<typeof listSeoCrawls>>, TError = ErrorType<SeoErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSeoCrawls>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List crawl history
+ */
+
+export function useListSeoCrawls<TData = Awaited<ReturnType<typeof listSeoCrawls>>, TError = ErrorType<SeoErrorResponse>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSeoCrawls>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListSeoCrawlsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartSeoCrawlUrl = () => {
+
+
+
+
+  return `/api/admin/seo/crawls`
+}
+
+/**
+ * @summary Start a manual website crawl
+ */
+export const startSeoCrawl = async ( options?: Parameters<typeof customFetch>[1]): Promise<SeoCrawlRun> => {
+
+  return customFetch<SeoCrawlRun>(getStartSeoCrawlUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartSeoCrawlMutationKey = () => ['startSeoCrawl'] as const;
+
+export const getStartSeoCrawlMutationOptions = <TError = ErrorType<SeoErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startSeoCrawl>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startSeoCrawl>>, TError,void, TContext> => {
+
+const mutationKey = getStartSeoCrawlMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startSeoCrawl>>, void> = () => {
+
+
+          return  startSeoCrawl(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartSeoCrawlMutationResult = NonNullable<Awaited<ReturnType<typeof startSeoCrawl>>>
+
+    export type StartSeoCrawlMutationError = ErrorType<SeoErrorResponse>
+
+
+    /**
+ * @summary Start a manual website crawl
+ */
+export const useStartSeoCrawl = <TError = ErrorType<SeoErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startSeoCrawl>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof startSeoCrawl>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStartSeoCrawlMutationOptions(options), queryClient);
+    }
+
+export const getStepSeoCrawlUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/seo/crawls/${id}/step`
+}
+
+/**
+ * @summary Process the next safe crawl batch
+ */
+export const stepSeoCrawl = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<SeoCrawlRun> => {
+
+  return customFetch<SeoCrawlRun>(getStepSeoCrawlUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStepSeoCrawlMutationKey = () => ['stepSeoCrawl'] as const;
+
+export const getStepSeoCrawlMutationOptions = <TError = ErrorType<SeoErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stepSeoCrawl>>, TError,StepSeoCrawlMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stepSeoCrawl>>, TError,StepSeoCrawlMutationVariables, TContext> => {
+
+const mutationKey = getStepSeoCrawlMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stepSeoCrawl>>, StepSeoCrawlMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  stepSeoCrawl(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StepSeoCrawlMutationResult = NonNullable<Awaited<ReturnType<typeof stepSeoCrawl>>>
+
+    export type StepSeoCrawlMutationError = ErrorType<SeoErrorResponse>
+    export type StepSeoCrawlMutationVariables = {id: string}
+
+    /**
+ * @summary Process the next safe crawl batch
+ */
+export const useStepSeoCrawl = <TError = ErrorType<SeoErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stepSeoCrawl>>, TError,StepSeoCrawlMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof stepSeoCrawl>>,
+        TError,
+        StepSeoCrawlMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStepSeoCrawlMutationOptions(options), queryClient);
+    }
+
+export const getUpdateSeoSettingsUrl = () => {
+
+
+
+
+  return `/api/admin/seo/settings`
+}
+
+/**
+ * @summary Enable or disable scheduled crawling
+ */
+export const updateSeoSettings = async (seoSettingsInput: SeoSettingsInput, options?: Parameters<typeof customFetch>[1]): Promise<SeoSettings> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SeoSettings>(getUpdateSeoSettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(seoSettingsInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateSeoSettingsMutationKey = () => ['updateSeoSettings'] as const;
+
+export const getUpdateSeoSettingsMutationOptions = <TError = ErrorType<SeoErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSeoSettings>>, TError,UpdateSeoSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSeoSettings>>, TError,UpdateSeoSettingsMutationVariables, TContext> => {
+
+const mutationKey = getUpdateSeoSettingsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSeoSettings>>, UpdateSeoSettingsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateSeoSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSeoSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateSeoSettings>>>
+    export type UpdateSeoSettingsMutationBody = BodyType<SeoSettingsInput>
+    export type UpdateSeoSettingsMutationError = ErrorType<SeoErrorResponse>
+    export type UpdateSeoSettingsMutationVariables = {data: BodyType<SeoSettingsInput>}
+
+    /**
+ * @summary Enable or disable scheduled crawling
+ */
+export const useUpdateSeoSettings = <TError = ErrorType<SeoErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSeoSettings>>, TError,UpdateSeoSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateSeoSettings>>,
+        TError,
+        UpdateSeoSettingsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateSeoSettingsMutationOptions(options), queryClient);
+    }
+
+export const getGetSeoSitemapIndexUrl = () => {
+
+
+
+
+  return `/api/seo/sitemap.xml`
+}
+
+/**
+ * @summary Serve the public XML sitemap index
+ */
+export const getSeoSitemapIndex = async ( options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getGetSeoSitemapIndexUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSeoSitemapIndexQueryKey = () => {
+    return [
+    `/api/seo/sitemap.xml`
+    ] as const;
+    }
+
+
+export const getGetSeoSitemapIndexQueryOptions = <TData = Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSeoSitemapIndexQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSeoSitemapIndex>>> = ({ signal }) => getSeoSitemapIndex({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSeoSitemapIndexQueryResult = NonNullable<Awaited<ReturnType<typeof getSeoSitemapIndex>>>
+export type GetSeoSitemapIndexQueryError = ErrorType<unknown>
+
+
+export function useGetSeoSitemapIndex<TData = Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSeoSitemapIndex>>,
+          TError,
+          Awaited<ReturnType<typeof getSeoSitemapIndex>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSeoSitemapIndex<TData = Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSeoSitemapIndex>>,
+          TError,
+          Awaited<ReturnType<typeof getSeoSitemapIndex>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSeoSitemapIndex<TData = Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Serve the public XML sitemap index
+ */
+
+export function useGetSeoSitemapIndex<TData = Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoSitemapIndex>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSeoSitemapIndexQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSeoProductsSitemapUrl = () => {
+
+
+
+
+  return `/api/seo/products-sitemap.xml`
+}
+
+/**
+ * @summary Serve the public product sitemap
+ */
+export const getSeoProductsSitemap = async ( options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getGetSeoProductsSitemapUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSeoProductsSitemapQueryKey = () => {
+    return [
+    `/api/seo/products-sitemap.xml`
+    ] as const;
+    }
+
+
+export const getGetSeoProductsSitemapQueryOptions = <TData = Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSeoProductsSitemapQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSeoProductsSitemap>>> = ({ signal }) => getSeoProductsSitemap({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSeoProductsSitemapQueryResult = NonNullable<Awaited<ReturnType<typeof getSeoProductsSitemap>>>
+export type GetSeoProductsSitemapQueryError = ErrorType<unknown>
+
+
+export function useGetSeoProductsSitemap<TData = Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSeoProductsSitemap>>,
+          TError,
+          Awaited<ReturnType<typeof getSeoProductsSitemap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSeoProductsSitemap<TData = Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSeoProductsSitemap>>,
+          TError,
+          Awaited<ReturnType<typeof getSeoProductsSitemap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSeoProductsSitemap<TData = Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Serve the public product sitemap
+ */
+
+export function useGetSeoProductsSitemap<TData = Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoProductsSitemap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSeoProductsSitemapQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSeoPagesSitemapUrl = () => {
+
+
+
+
+  return `/api/seo/pages-sitemap.xml`
+}
+
+/**
+ * @summary Serve the public page sitemap
+ */
+export const getSeoPagesSitemap = async ( options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getGetSeoPagesSitemapUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSeoPagesSitemapQueryKey = () => {
+    return [
+    `/api/seo/pages-sitemap.xml`
+    ] as const;
+    }
+
+
+export const getGetSeoPagesSitemapQueryOptions = <TData = Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSeoPagesSitemapQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSeoPagesSitemap>>> = ({ signal }) => getSeoPagesSitemap({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSeoPagesSitemapQueryResult = NonNullable<Awaited<ReturnType<typeof getSeoPagesSitemap>>>
+export type GetSeoPagesSitemapQueryError = ErrorType<unknown>
+
+
+export function useGetSeoPagesSitemap<TData = Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSeoPagesSitemap>>,
+          TError,
+          Awaited<ReturnType<typeof getSeoPagesSitemap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSeoPagesSitemap<TData = Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSeoPagesSitemap>>,
+          TError,
+          Awaited<ReturnType<typeof getSeoPagesSitemap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSeoPagesSitemap<TData = Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Serve the public page sitemap
+ */
+
+export function useGetSeoPagesSitemap<TData = Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoPagesSitemap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSeoPagesSitemapQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSeoImagesSitemapUrl = () => {
+
+
+
+
+  return `/api/seo/images-sitemap.xml`
+}
+
+/**
+ * @summary Serve the public image sitemap
+ */
+export const getSeoImagesSitemap = async ( options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getGetSeoImagesSitemapUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSeoImagesSitemapQueryKey = () => {
+    return [
+    `/api/seo/images-sitemap.xml`
+    ] as const;
+    }
+
+
+export const getGetSeoImagesSitemapQueryOptions = <TData = Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSeoImagesSitemapQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSeoImagesSitemap>>> = ({ signal }) => getSeoImagesSitemap({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSeoImagesSitemapQueryResult = NonNullable<Awaited<ReturnType<typeof getSeoImagesSitemap>>>
+export type GetSeoImagesSitemapQueryError = ErrorType<unknown>
+
+
+export function useGetSeoImagesSitemap<TData = Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSeoImagesSitemap>>,
+          TError,
+          Awaited<ReturnType<typeof getSeoImagesSitemap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSeoImagesSitemap<TData = Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSeoImagesSitemap>>,
+          TError,
+          Awaited<ReturnType<typeof getSeoImagesSitemap>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSeoImagesSitemap<TData = Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Serve the public image sitemap
+ */
+
+export function useGetSeoImagesSitemap<TData = Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSeoImagesSitemap>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSeoImagesSitemapQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListProductsUrl = () => {
 

@@ -5,6 +5,121 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface SeoSettingsInput {
+  scheduled_enabled: boolean;
+}
+
+export type SeoDiscoveryRecordPageType = typeof SeoDiscoveryRecordPageType[keyof typeof SeoDiscoveryRecordPageType];
+
+
+export const SeoDiscoveryRecordPageType = {
+  page: 'page',
+  product: 'product',
+  raw_material: 'raw_material',
+} as const;
+
+export type SeoDiscoveryRecordGoogleIndexStatus = typeof SeoDiscoveryRecordGoogleIndexStatus[keyof typeof SeoDiscoveryRecordGoogleIndexStatus];
+
+
+export const SeoDiscoveryRecordGoogleIndexStatus = {
+  unknown: 'unknown',
+  indexed: 'indexed',
+  not_indexed: 'not_indexed',
+} as const;
+
+export interface SeoDiscoveryRecord {
+  url: string;
+  canonical_url: string;
+  page_type: SeoDiscoveryRecordPageType;
+  title: string;
+  description: string;
+  image_urls: string[];
+  /** @nullable */
+  price: number | null;
+  /** @nullable */
+  currency: string | null;
+  /** @nullable */
+  http_status: number | null;
+  /** @nullable */
+  last_checked_at: string | null;
+  /** @nullable */
+  last_modified: string | null;
+  indexable: boolean;
+  sitemap_included: boolean;
+  issue_codes: string[];
+  /** @nullable */
+  category: string | null;
+  google_index_status: SeoDiscoveryRecordGoogleIndexStatus;
+}
+
+export type SeoCrawlRunStatus = typeof SeoCrawlRunStatus[keyof typeof SeoCrawlRunStatus];
+
+
+export const SeoCrawlRunStatus = {
+  running: 'running',
+  complete: 'complete',
+  partial: 'partial',
+  failed: 'failed',
+} as const;
+
+export interface SeoCrawlRun {
+  id: string;
+  status: SeoCrawlRunStatus;
+  started_at: string;
+  /** @nullable */
+  completed_at: string | null;
+  scheduled: boolean;
+  pages_discovered: number;
+  products_discovered: number;
+  raw_materials_discovered: number;
+  images_discovered: number;
+  urls_checked: number;
+  broken_links: number;
+  crawl_errors: string[];
+  remaining_urls: number;
+  /** @nullable */
+  sitemap_generated_at: string | null;
+}
+
+export interface SeoSummary {
+  pages_discovered: number;
+  products_discovered: number;
+  raw_materials_discovered: number;
+  images_discovered: number;
+  successful_urls: number;
+  broken_links: number;
+  crawl_errors: number;
+  /** @nullable */
+  last_crawl_at: string | null;
+  /** @nullable */
+  sitemap_generated_at: string | null;
+  current_run: SeoCrawlRun | null;
+  scheduled_enabled: boolean;
+  google_search_console_connected: boolean;
+  /** @nullable */
+  verified_indexed_pages: number | null;
+}
+
+export interface SeoRecordsPage {
+  items: SeoDiscoveryRecord[];
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
+}
+
+export interface SeoCrawlHistory {
+  items: SeoCrawlRun[];
+}
+
+export interface SeoSettings {
+  scheduled_enabled: boolean;
+  interval_hours: number;
+  site_origin: string;
+  /** @nullable */
+  next_crawl_at: string | null;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -588,7 +703,53 @@ export interface ContactMessageUpdate {
 }
 
 /**
+ * Invalid SEO request, admin access required, or crawl/storage service unavailable.
+ */
+export type SeoErrorResponse = ErrorEnvelope;
+
+/**
  * Invalid input, sign-in required, missing material, rate limit, or supplier/AI service unavailable.
  */
 export type RawMaterialErrorResponse = ErrorEnvelope;
+
+export type ListSeoRecordsParams = {
+/**
+ * @maxLength 160
+ */
+search?: string;
+kind?: ListSeoRecordsKind;
+/**
+ * @maxLength 80
+ */
+issue?: string;
+sitemap?: ListSeoRecordsSitemap;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+per_page?: number;
+};
+
+export type ListSeoRecordsKind = typeof ListSeoRecordsKind[keyof typeof ListSeoRecordsKind];
+
+
+export const ListSeoRecordsKind = {
+  all: 'all',
+  page: 'page',
+  product: 'product',
+  raw_material: 'raw_material',
+} as const;
+
+export type ListSeoRecordsSitemap = typeof ListSeoRecordsSitemap[keyof typeof ListSeoRecordsSitemap];
+
+
+export const ListSeoRecordsSitemap = {
+  all: 'all',
+  included: 'included',
+  excluded: 'excluded',
+} as const;
 

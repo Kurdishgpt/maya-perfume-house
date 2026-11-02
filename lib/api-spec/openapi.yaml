@@ -18,6 +18,8 @@ tags:
     description: Server-side fragrance data suggestions.
   - name: storage
     description: Product image uploads and delivery.
+  - name: seo
+    description: Protected site discovery, crawl reports, and SEO audits.
 paths:
   /healthz:
     get:
@@ -92,6 +94,135 @@ paths:
       responses:
         "204":
           description: The passcode unlock was cleared.
+  /admin/seo/summary:
+    get:
+      operationId: getSeoSummary
+      tags: [seo]
+      summary: Get SEO discovery and sitemap status
+      responses:
+        "200":
+          description: Current catalog discovery and crawl summary.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SeoSummary" }
+        default: { $ref: "#/components/responses/SeoError" }
+  /admin/seo/records:
+    get:
+      operationId: listSeoRecords
+      tags: [seo]
+      summary: Search and filter discovered pages and products
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: kind, in: query, schema: { type: string, enum: [all, page, product, raw_material], default: all } }
+        - { name: issue, in: query, schema: { type: string, maxLength: 80 } }
+        - { name: sitemap, in: query, schema: { type: string, enum: [all, included, excluded], default: all } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: Paginated SEO discovery records.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SeoRecordsPage" }
+        default: { $ref: "#/components/responses/SeoError" }
+  /admin/seo/crawls:
+    get:
+      operationId: listSeoCrawls
+      tags: [seo]
+      summary: List crawl history
+      responses:
+        "200":
+          description: Recent crawl reports.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SeoCrawlHistory" }
+        default: { $ref: "#/components/responses/SeoError" }
+    post:
+      operationId: startSeoCrawl
+      tags: [seo]
+      summary: Start a manual website crawl
+      responses:
+        "202":
+          description: A crawl has started.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SeoCrawlRun" }
+        default: { $ref: "#/components/responses/SeoError" }
+  /admin/seo/crawls/{id}/step:
+    post:
+      operationId: stepSeoCrawl
+      tags: [seo]
+      summary: Process the next safe crawl batch
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Updated crawl progress.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SeoCrawlRun" }
+        default: { $ref: "#/components/responses/SeoError" }
+  /admin/seo/settings:
+    patch:
+      operationId: updateSeoSettings
+      tags: [seo]
+      summary: Enable or disable scheduled crawling
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SeoSettingsInput" }
+      responses:
+        "200":
+          description: Updated crawl settings.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SeoSettings" }
+        default: { $ref: "#/components/responses/SeoError" }
+  /seo/sitemap.xml:
+    get:
+      operationId: getSeoSitemapIndex
+      tags: [seo]
+      summary: Serve the public XML sitemap index
+      responses:
+        "200":
+          description: Sitemap index XML.
+          content:
+            application/xml:
+              schema: { type: string }
+  /seo/products-sitemap.xml:
+    get:
+      operationId: getSeoProductsSitemap
+      tags: [seo]
+      summary: Serve the public product sitemap
+      responses:
+        "200":
+          description: Product sitemap XML.
+          content:
+            application/xml:
+              schema: { type: string }
+  /seo/pages-sitemap.xml:
+    get:
+      operationId: getSeoPagesSitemap
+      tags: [seo]
+      summary: Serve the public page sitemap
+      responses:
+        "200":
+          description: Page sitemap XML.
+          content:
+            application/xml:
+              schema: { type: string }
+  /seo/images-sitemap.xml:
+    get:
+      operationId: getSeoImagesSitemap
+      tags: [seo]
+      summary: Serve the public image sitemap
+      responses:
+        "200":
+          description: Image sitemap XML.
+          content:
+            application/xml:
+              schema: { type: string }
   /products:
     get:
       operationId: listProducts
@@ -668,12 +799,103 @@ paths:
           description: Message permanently deleted.
 components:
   responses:
+    SeoError:
+      description: Invalid SEO request, admin access required, or crawl/storage service unavailable.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
     RawMaterialError:
       description: Invalid input, sign-in required, missing material, rate limit, or supplier/AI service unavailable.
       content:
         application/json:
           schema: { $ref: "#/components/schemas/ErrorEnvelope" }
   schemas:
+    SeoSettingsInput:
+      type: object
+      required: [scheduled_enabled]
+      properties:
+        scheduled_enabled: { type: boolean }
+    SeoDiscoveryRecord:
+      type: object
+      required: [url, canonical_url, page_type, title, description, image_urls, price, currency, http_status, last_checked_at, last_modified, indexable, sitemap_included, issue_codes, category, google_index_status]
+      properties:
+        url: { type: string, format: uri }
+        canonical_url: { type: string, format: uri }
+        page_type: { type: string, enum: [page, product, raw_material] }
+        title: { type: string }
+        description: { type: string }
+        image_urls: { type: array, items: { type: string, format: uri } }
+        price: { type: [number, "null"] }
+        currency: { type: [string, "null"] }
+        http_status: { type: [integer, "null"] }
+        last_checked_at: { type: [string, "null"], format: date-time }
+        last_modified: { type: [string, "null"], format: date-time }
+        indexable: { type: boolean }
+        sitemap_included: { type: boolean }
+        issue_codes: { type: array, items: { type: string } }
+        category: { type: [string, "null"] }
+        google_index_status: { type: string, enum: [unknown, indexed, not_indexed] }
+    SeoCrawlRun:
+      type: object
+      required: [id, status, started_at, completed_at, scheduled, pages_discovered, products_discovered, raw_materials_discovered, images_discovered, urls_checked, broken_links, crawl_errors, remaining_urls, sitemap_generated_at]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [running, complete, partial, failed] }
+        started_at: { type: string, format: date-time }
+        completed_at: { type: [string, "null"], format: date-time }
+        scheduled: { type: boolean }
+        pages_discovered: { type: integer }
+        products_discovered: { type: integer }
+        raw_materials_discovered: { type: integer }
+        images_discovered: { type: integer }
+        urls_checked: { type: integer }
+        broken_links: { type: integer }
+        crawl_errors: { type: array, items: { type: string } }
+        remaining_urls: { type: integer }
+        sitemap_generated_at: { type: [string, "null"], format: date-time }
+    SeoSummary:
+      type: object
+      required: [pages_discovered, products_discovered, raw_materials_discovered, images_discovered, successful_urls, broken_links, crawl_errors, last_crawl_at, sitemap_generated_at, current_run, scheduled_enabled, google_search_console_connected, verified_indexed_pages]
+      properties:
+        pages_discovered: { type: integer }
+        products_discovered: { type: integer }
+        raw_materials_discovered: { type: integer }
+        images_discovered: { type: integer }
+        successful_urls: { type: integer }
+        broken_links: { type: integer }
+        crawl_errors: { type: integer }
+        last_crawl_at: { type: [string, "null"], format: date-time }
+        sitemap_generated_at: { type: [string, "null"], format: date-time }
+        current_run: { oneOf: [{ $ref: "#/components/schemas/SeoCrawlRun" }, { type: "null" }] }
+        scheduled_enabled: { type: boolean }
+        google_search_console_connected: { type: boolean }
+        verified_indexed_pages: { type: [integer, "null"] }
+    SeoRecordsPage:
+      type: object
+      required: [items, total, page, per_page, pages]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/SeoDiscoveryRecord" }
+        total: { type: integer }
+        page: { type: integer }
+        per_page: { type: integer }
+        pages: { type: integer }
+    SeoCrawlHistory:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/SeoCrawlRun" }
+    SeoSettings:
+      type: object
+      required: [scheduled_enabled, interval_hours, site_origin, next_crawl_at]
+      properties:
+        scheduled_enabled: { type: boolean }
+        interval_hours: { type: integer }
+        site_origin: { type: string, format: uri }
+        next_crawl_at: { type: [string, "null"], format: date-time }
     HealthStatus:
       type: object
       properties:

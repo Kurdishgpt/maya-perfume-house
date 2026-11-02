@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { PerfumeResearch } from "@/components/store/perfume-research";
 import { CommaSeparatedInput } from "@/components/store/comma-separated-input";
 import { RawMaterialAdmin } from "@/components/store/raw-material-admin";
+import SeoDiscovery from "@/components/admin/seo-discovery";
 import AdminContact from "@/pages/admin-contact";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -21,10 +22,10 @@ import type { FragranceSuggestion, Product, ProductInput } from "@workspace/api-
 import {
   AlertTriangle, ArrowDown, ArrowDownUp, ArrowLeft, ArrowRight, Boxes, Check, CheckCircle2, Database,
   ChevronDown, CircleHelp, CloudUpload, Download, ExternalLink, FlaskConical, LayoutDashboard, Loader2, Mail,
-  Menu, Package, Pencil, Plus, Search, Settings2, Sparkles, Store, Trash2, Upload, X,
+  Menu, Package, Pencil, Plus, Search, SearchCheck, Settings2, Sparkles, Store, Trash2, Upload, X,
 } from "lucide-react";
 
-type Page = "Dashboard" | "Products" | "Raw Materials" | "Storefront Sync" | "Inbox & Hours" | "Settings";
+type Page = "Dashboard" | "Products" | "Raw Materials" | "SEO Discovery" | "Storefront Sync" | "Inbox & Hours" | "Settings";
 type EditorMode = "manual" | "ai";
 type Draft = ProductInput;
 import { comparePrices, formatMoney } from "@/lib/money";
@@ -38,6 +39,7 @@ const blankDraft = (): Draft => ({
 const navItems: { label: Page; icon: typeof LayoutDashboard }[] = [
   { label: "Dashboard", icon: LayoutDashboard }, { label: "Products", icon: Package },
   { label: "Raw Materials", icon: FlaskConical },
+  { label: "SEO Discovery", icon: SearchCheck },
   { label: "Storefront Sync", icon: Store }, { label: "Inbox & Hours", icon: Mail },
   { label: "Settings", icon: Settings2 },
 ];
@@ -274,6 +276,7 @@ export default function AdminPanel() {
         <div className="mx-auto max-w-[1500px] px-5 py-7 md:px-9 md:py-9">
           {page==="Products"&&<ProductsView products={products} filtered={filtered} categories={categories} brands={brands} search={search} setSearch={setSearch} category={category} setCategory={setCategory} brand={brand} setBrand={setBrand} sort={sort} setSort={setSort} onCreate={openCreate} onEdit={openEdit} onDelete={setDeleteTarget} loading={productsQuery.isFetching} threshold={lowStockThreshold}/>}
           {page==="Raw Materials"&&<RawMaterialAdmin notify={notify}/>}
+          {page==="SEO Discovery"&&<SeoDiscovery/>}
           {page==="Dashboard"&&<DashboardView products={products} lowStock={lowStock} threshold={lowStockThreshold} onProducts={()=>setPage("Products")} onCreate={()=>openCreate("manual")} onSync={()=>setPage("Storefront Sync")}/>}
           {page==="Storefront Sync"&&<SyncView products={products} checked={syncChecked || (productsQuery.dataUpdatedAt ? new Date(productsQuery.dataUpdatedAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "Awaiting first check")} onCheck={()=>void checkSync()} checking={productsQuery.isFetching} connected={!productsQuery.isError} onProducts={()=>setPage("Products")}/>}
           {page==="Inbox & Hours"&&<AdminContact/>}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getListRawMaterialsQueryKey, getListRawMaterialsQueryOptions } from '@workspace/api-client-react';
 import type { RawMaterial } from '@workspace/api-client-react';
 import { useQuery } from '@tanstack/react-query';
@@ -26,7 +26,7 @@ function MaterialCard({ m, index }: { m: RawMaterial; index: number }) {
     .replace(/\s+([.,;:])/g, '$1')
     .trim();
   const addToBag = () => { addRawMaterial(m, safe); setAdded(true); };
-  return <article className="mc-raw-card" style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }} data-testid={`card-raw-material-${m.id}`}>
+  return <article id={`raw-material-${m.source_id}`} className="mc-raw-card" style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }} data-testid={`card-raw-material-${m.id}`}>
     <div className="mc-raw-top">
       <div className="mc-raw-img">{m.image_url && !imageFailed ? <img src={m.image_url} alt={m.name} loading="lazy" onError={() => setImageFailed(true)}/> : <FlaskConical size={22}/>}</div>
       <div style={{ minWidth: 0 }}>
@@ -61,7 +61,7 @@ export default function RawMaterialsPage() {
   const { t } = useStore();
   const back = useBack('/');
   const q = useQuery(getListRawMaterialsQueryOptions({ query: { queryKey: getListRawMaterialsQueryKey(), retry: 1 } }));
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => new URLSearchParams(window.location.search).get('q') ?? '');
   const [cat, setCat] = useState('All');
   const [sort, setSort] = useState('featured');
   const [page, setPage] = useState(1);
@@ -79,6 +79,12 @@ export default function RawMaterialsPage() {
   const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const shown = list.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    const targetId = decodeURIComponent(window.location.hash.slice(1));
+    if (!targetId.startsWith('raw-material-')) return;
+    document.getElementById(targetId)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [shown, q.isSuccess]);
 
   return <div className="mc-page" data-testid="page-raw-materials">
     <PageBar title={t('rawMaterials')} onBack={back}/>

@@ -13,6 +13,10 @@
     "not_found_handling": "single-page-application"
   },
   "vars": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "SEO_SITE_ORIGIN": "https://mayacolllection.com"
+  },
+  "triggers": {
+    "crons": ["*/15 * * * *"]
   }
 }

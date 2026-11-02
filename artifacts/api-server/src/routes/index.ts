@@ -10,6 +10,7 @@ import supabaseMigrationRouter from "./supabaseMigration";
 import ordersRouter from "./orders";
 import catalogCsvRouter from "./catalogCsv";
 import cartRouter from "./cart";
+import seoRouter from "./seo";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(supabaseMigrationRouter);
 router.use(ordersRouter);
 router.use(catalogCsvRouter);
 router.use(cartRouter);
+router.use(seoRouter);
 
 export default router;

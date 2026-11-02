@@ -48,6 +48,200 @@ export const LockAdminPasscodeResponse = zod.void()
 
 
 /**
+ * @summary Get SEO discovery and sitemap status
+ */
+export const GetSeoSummaryResponse = zod.object({
+  "pages_discovered": zod.number().int(),
+  "products_discovered": zod.number().int(),
+  "raw_materials_discovered": zod.number().int(),
+  "images_discovered": zod.number().int(),
+  "successful_urls": zod.number().int(),
+  "broken_links": zod.number().int(),
+  "crawl_errors": zod.number().int(),
+  "last_crawl_at": zod.coerce.date().nullable(),
+  "sitemap_generated_at": zod.coerce.date().nullable(),
+  "current_run": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['running', 'complete', 'partial', 'failed']),
+  "started_at": zod.coerce.date(),
+  "completed_at": zod.coerce.date().nullable(),
+  "scheduled": zod.boolean(),
+  "pages_discovered": zod.number().int(),
+  "products_discovered": zod.number().int(),
+  "raw_materials_discovered": zod.number().int(),
+  "images_discovered": zod.number().int(),
+  "urls_checked": zod.number().int(),
+  "broken_links": zod.number().int(),
+  "crawl_errors": zod.array(zod.string()),
+  "remaining_urls": zod.number().int(),
+  "sitemap_generated_at": zod.coerce.date().nullable()
+}),zod.null()]),
+  "scheduled_enabled": zod.boolean(),
+  "google_search_console_connected": zod.boolean(),
+  "verified_indexed_pages": zod.number().int().nullable()
+})
+
+
+/**
+ * @summary Search and filter discovered pages and products
+ */
+export const listSeoRecordsQuerySearchMax = 160;
+
+export const listSeoRecordsQueryKindDefault = `all`;
+export const listSeoRecordsQueryIssueMax = 80;
+
+export const listSeoRecordsQuerySitemapDefault = `all`;
+export const listSeoRecordsQueryPageDefault = 1;
+
+export const listSeoRecordsQueryPerPageDefault = 20;
+export const listSeoRecordsQueryPerPageMax = 50;
+
+
+
+export const ListSeoRecordsQueryParams = zod.object({
+  "search": zod.coerce.string().max(listSeoRecordsQuerySearchMax).optional(),
+  "kind": zod.enum(['all', 'page', 'product', 'raw_material']).default(listSeoRecordsQueryKindDefault),
+  "issue": zod.coerce.string().max(listSeoRecordsQueryIssueMax).optional(),
+  "sitemap": zod.enum(['all', 'included', 'excluded']).default(listSeoRecordsQuerySitemapDefault),
+  "page": zod.coerce.number().int().min(1).default(listSeoRecordsQueryPageDefault),
+  "per_page": zod.coerce.number().int().min(1).max(listSeoRecordsQueryPerPageMax).default(listSeoRecordsQueryPerPageDefault)
+})
+
+export const ListSeoRecordsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "url": zod.string().url(),
+  "canonical_url": zod.string().url(),
+  "page_type": zod.enum(['page', 'product', 'raw_material']),
+  "title": zod.string(),
+  "description": zod.string(),
+  "image_urls": zod.array(zod.string().url()),
+  "price": zod.number().nullable(),
+  "currency": zod.string().nullable(),
+  "http_status": zod.number().int().nullable(),
+  "last_checked_at": zod.coerce.date().nullable(),
+  "last_modified": zod.coerce.date().nullable(),
+  "indexable": zod.boolean(),
+  "sitemap_included": zod.boolean(),
+  "issue_codes": zod.array(zod.string()),
+  "category": zod.string().nullable(),
+  "google_index_status": zod.enum(['unknown', 'indexed', 'not_indexed'])
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int(),
+  "per_page": zod.number().int(),
+  "pages": zod.number().int()
+})
+
+
+/**
+ * @summary List crawl history
+ */
+export const ListSeoCrawlsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['running', 'complete', 'partial', 'failed']),
+  "started_at": zod.coerce.date(),
+  "completed_at": zod.coerce.date().nullable(),
+  "scheduled": zod.boolean(),
+  "pages_discovered": zod.number().int(),
+  "products_discovered": zod.number().int(),
+  "raw_materials_discovered": zod.number().int(),
+  "images_discovered": zod.number().int(),
+  "urls_checked": zod.number().int(),
+  "broken_links": zod.number().int(),
+  "crawl_errors": zod.array(zod.string()),
+  "remaining_urls": zod.number().int(),
+  "sitemap_generated_at": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Start a manual website crawl
+ */
+export const StartSeoCrawlResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['running', 'complete', 'partial', 'failed']),
+  "started_at": zod.coerce.date(),
+  "completed_at": zod.coerce.date().nullable(),
+  "scheduled": zod.boolean(),
+  "pages_discovered": zod.number().int(),
+  "products_discovered": zod.number().int(),
+  "raw_materials_discovered": zod.number().int(),
+  "images_discovered": zod.number().int(),
+  "urls_checked": zod.number().int(),
+  "broken_links": zod.number().int(),
+  "crawl_errors": zod.array(zod.string()),
+  "remaining_urls": zod.number().int(),
+  "sitemap_generated_at": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Process the next safe crawl batch
+ */
+export const StepSeoCrawlParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const StepSeoCrawlResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['running', 'complete', 'partial', 'failed']),
+  "started_at": zod.coerce.date(),
+  "completed_at": zod.coerce.date().nullable(),
+  "scheduled": zod.boolean(),
+  "pages_discovered": zod.number().int(),
+  "products_discovered": zod.number().int(),
+  "raw_materials_discovered": zod.number().int(),
+  "images_discovered": zod.number().int(),
+  "urls_checked": zod.number().int(),
+  "broken_links": zod.number().int(),
+  "crawl_errors": zod.array(zod.string()),
+  "remaining_urls": zod.number().int(),
+  "sitemap_generated_at": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Enable or disable scheduled crawling
+ */
+export const UpdateSeoSettingsBody = zod.object({
+  "scheduled_enabled": zod.boolean()
+})
+
+export const UpdateSeoSettingsResponse = zod.object({
+  "scheduled_enabled": zod.boolean(),
+  "interval_hours": zod.number().int(),
+  "site_origin": zod.string().url(),
+  "next_crawl_at": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Serve the public XML sitemap index
+ */
+export const GetSeoSitemapIndexResponse = zod.unknown()
+
+
+/**
+ * @summary Serve the public product sitemap
+ */
+export const GetSeoProductsSitemapResponse = zod.unknown()
+
+
+/**
+ * @summary Serve the public page sitemap
+ */
+export const GetSeoPagesSitemapResponse = zod.unknown()
+
+
+/**
+ * @summary Serve the public image sitemap
+ */
+export const GetSeoImagesSitemapResponse = zod.unknown()
+
+
+/**
  * @summary List the live storefront catalog
  */
 export const listProductsResponseBottleSizeMlMax = 10000;
