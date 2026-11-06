@@ -165,6 +165,10 @@ function AdminGate() {
   const submitRecovery = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    if (new TextEncoder().encode(recoveryKey).length < 32) {
+      setError('The recovery key must be at least 32 bytes. Use the same long value saved in Replit Secrets.');
+      return;
+    }
     if (newPasscode.length < 12) {
       setError('Use at least 12 characters for the new password.');
       return;
@@ -180,7 +184,8 @@ function AdminGate() {
       setConfirmNewPasscode('');
       await status.refetch();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Password recovery could not be completed. Please try again.');
+      const apiMessage = (cause as { data?: { error?: string } })?.data?.error;
+      setError(apiMessage || (cause instanceof Error ? cause.message : 'Password recovery could not be completed. Please try again.'));
     }
   };
   const closeRecovery = () => {
@@ -194,9 +199,10 @@ function AdminGate() {
   if (status.isError) return <div className="mc-admin-gate"><div className="mc-admin-gate-card"><Crown className="mc-gate-crown"/><h1>Admin access unavailable</h1><p role="alert">The server could not check your access. Please try again.</p><button onClick={() => void status.refetch()} disabled={status.isFetching} data-testid="button-retry-admin-access">{status.isFetching ? 'Checking…' : 'Try again'}</button><Link href="/">Return to storefront</Link></div></div>;
   if (unlocked) return <AdminPanel/>;
   if (recoveryMode) return <div className="mc-admin-gate"><form onSubmit={(e) => void submitRecovery(e)} className="mc-admin-gate-card" data-testid="form-admin-recovery">
-    <Crown className="mc-gate-crown"/><span className="mc-kicker">MAYA COLLECTION · PRIVATE</span><h1>Recover admin access</h1><p>Use the recovery key stored in the managed secrets, then set a new administrator password.</p>
+    <Crown className="mc-gate-crown"/><span className="mc-kicker">MAYA COLLECTION · PRIVATE</span><h1>Recover admin access</h1><p>Use the same recovery key saved in Replit Secrets, then set a new administrator password. The key is separate from your admin password.</p>
     <label htmlFor="admin-recovery-key"><LockKeyhole size={13}/> Recovery key</label>
-    <input id="admin-recovery-key" type="password" autoComplete="off" required minLength={32} maxLength={256} value={recoveryKey} onChange={(e) => setRecoveryKey(e.target.value)} data-testid="input-admin-recovery-key"/>
+    <p className="mc-gate-hint">Enter the exact secret value; it must be at least 32 bytes. A random 64-character value is recommended.</p>
+    <input id="admin-recovery-key" type="password" autoComplete="off" required maxLength={256} value={recoveryKey} onChange={(e) => setRecoveryKey(e.target.value)} data-testid="input-admin-recovery-key"/>
     <label htmlFor="admin-recovery-new-password">New password</label>
     <input id="admin-recovery-new-password" type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={newPasscode} onChange={(e) => setNewPasscode(e.target.value)} data-testid="input-admin-recovery-new-password"/>
     <label htmlFor="admin-recovery-confirm-password">Confirm new password</label>
