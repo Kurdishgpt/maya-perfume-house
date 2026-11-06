@@ -5,10 +5,12 @@ import {
   GetAdminPasscodeStatusResponse,
   RecoverAdminPasscodeBody,
   RecoverAdminPasscodeResponse,
+  ResetAdminPasswordFromSessionBody,
+  ResetAdminPasswordFromSessionResponse,
   UnlockAdminPasscodeBody,
   UnlockAdminPasscodeResponse,
 } from "@workspace/api-zod";
-import { changeAdminPassword, recoverAdminPassword, verifyAdminPassword } from "../lib/adminPassword";
+import { changeAdminPassword, resetAdminPassword, verifyAdminPassword } from "../lib/adminPassword";
 import {
   clearAdminPasscodeCookie,
   isAdminRecoveryConfigured,
@@ -134,6 +136,26 @@ router.post("/admin/change-password", requireAdmin, async (req, res): Promise<vo
   }
 });
 
+router.post("/admin/change-password/session", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = ResetAdminPasswordFromSessionBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Enter a new password with at least 12 characters." });
+    return;
+  }
+
+  try {
+    const revision = await resetAdminPassword(parsed.data.new_passcode);
+    if (!setAdminPasscodeCookie(res, revision)) {
+      res.status(503).json({ error: "Admin access is not configured." });
+      return;
+    }
+    res.json(ResetAdminPasswordFromSessionResponse.parse({ updated: true }));
+  } catch (error) {
+    req.log.error({ err: error }, "Could not reset administrator password from session");
+    res.status(503).json({ error: "Password reset is temporarily unavailable." });
+  }
+});
+
 router.post("/admin/passcode/recover", async (req, res): Promise<void> => {
   const parsed = RecoverAdminPasscodeBody.safeParse(req.body);
   if (!parsed.success) {
@@ -172,7 +194,7 @@ router.post("/admin/passcode/recover", async (req, res): Promise<void> => {
   }
 
   try {
-    const revision = await recoverAdminPassword(parsed.data.new_passcode);
+    const revision = await resetAdminPassword(parsed.data.new_passcode);
     failedRecoveryAttempts.delete(clientIp);
     if (!setAdminPasscodeCookie(res, revision)) {
       res.status(503).json({ error: "Admin access is not configured." });

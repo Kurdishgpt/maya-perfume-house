@@ -14,6 +14,7 @@ import {
   useGetAdminPasscodeStatus,
   useLockAdminPasscode,
   useChangeAdminPassword,
+  useResetAdminPasswordFromSession,
   useListProducts,
   useRequestUploadUrl,
   useUpdateProduct,
@@ -443,11 +444,14 @@ function SettingsView({threshold,onThreshold}:{threshold:number;onThreshold:(val
 
 function ChangeAdminPasswordForm() {
   const changePassword = useChangeAdminPassword();
+  const resetFromSession = useResetAdminPasswordFromSession();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [sessionResetMode, setSessionResetMode] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const isPending = changePassword.isPending || resetFromSession.isPending;
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -462,18 +466,25 @@ function ChangeAdminPasswordForm() {
       return;
     }
     try {
-      await changePassword.mutateAsync({
-        data: { current_passcode: currentPassword, new_passcode: newPassword },
-      });
+      if (sessionResetMode) {
+        await resetFromSession.mutateAsync({ data: { new_passcode: newPassword } });
+      } else {
+        await changePassword.mutateAsync({
+          data: { current_passcode: currentPassword, new_passcode: newPassword },
+        });
+      }
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      setSuccess("Password changed. Other administrator sessions have been signed out.");
+      setSuccess(sessionResetMode
+        ? "Password reset. Other administrator sessions have been signed out."
+        : "Password changed. Other administrator sessions have been signed out.");
     } catch (cause) {
       const apiMessage = (cause as { data?: { error?: string } })?.data?.error;
       setError(apiMessage || errText(cause));
     } finally {
       changePassword.reset();
+      resetFromSession.reset();
     }
   };
 
@@ -482,12 +493,14 @@ function ChangeAdminPasswordForm() {
     <div className="flex gap-4">
       <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#c4ad7c]/20 bg-[#c4ad7c]/[.07] text-[#c4ad7c]"><KeyRound size={17}/></div>
       <div className="min-w-0 flex-1">
-        <h2 className="font-serif text-xl text-[#e7e2d7]">Change administrator password</h2>
-        <p className="mt-1 max-w-xl text-[11px] leading-5 text-[#87918c]">Use at least 12 characters. Other administrator sessions are signed out after the change.</p>
+        <h2 className="font-serif text-xl text-[#e7e2d7]">{sessionResetMode ? "Reset administrator password" : "Change administrator password"}</h2>
+        <p className="mt-1 max-w-xl text-[11px] leading-5 text-[#87918c]">{sessionResetMode
+          ? "This uses your currently unlocked admin session instead of the old password. Other administrator sessions will be signed out."
+          : "Use at least 12 characters. Other administrator sessions are signed out after the change."}</p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <label className="text-[10px] uppercase tracking-[.1em] text-[#aab1aa] sm:col-span-2" htmlFor="admin-current-password">Current password
+          {!sessionResetMode && <label className="text-[10px] uppercase tracking-[.1em] text-[#aab1aa] sm:col-span-2" htmlFor="admin-current-password">Current password
             <input id="admin-current-password" className={inputClass} type="password" autoComplete="current-password" minLength={1} maxLength={256} required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} data-testid="input-admin-current-password"/>
-          </label>
+          </label>}
           <label className="text-[10px] uppercase tracking-[.1em] text-[#aab1aa]" htmlFor="admin-new-password">New password
             <input id="admin-new-password" className={inputClass} type="password" autoComplete="new-password" minLength={12} maxLength={128} required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} data-testid="input-admin-new-password"/>
           </label>
@@ -497,8 +510,11 @@ function ChangeAdminPasswordForm() {
         </div>
         {error && <p className="mt-3 text-[11px] text-[#f0c2b6]" role="alert" data-testid="text-admin-password-error">{error}</p>}
         {success && <p className="mt-3 text-[11px] text-[#a9c3a8]" role="status" data-testid="text-admin-password-success">{success}</p>}
-        <button type="submit" disabled={changePassword.isPending} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-[#D9AD45] px-4 py-2 text-[9px] font-semibold uppercase tracking-[.1em] text-[#1b201f] disabled:cursor-not-allowed disabled:opacity-50" data-testid="button-change-admin-password">
-          {changePassword.isPending ? <><Loader2 size={13} className="animate-spin"/>Updating…</> : "Change password"}
+        <button type="submit" disabled={isPending} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-[#D9AD45] px-4 py-2 text-[9px] font-semibold uppercase tracking-[.1em] text-[#1b201f] disabled:cursor-not-allowed disabled:opacity-50" data-testid="button-change-admin-password">
+          {isPending ? <><Loader2 size={13} className="animate-spin"/>Updating…</> : sessionResetMode ? "Set new password" : "Change password"}
+        </button>
+        <button type="button" onClick={() => { setSessionResetMode(!sessionResetMode); setCurrentPassword(""); setError(""); setSuccess(""); }} className="mt-4 ml-3 text-[9px] font-semibold uppercase tracking-[.1em] text-[#c6b07d] underline decoration-[#c6b07d]/40 underline-offset-4 hover:text-[#e4cd95]" data-testid="button-toggle-session-password-reset">
+          {sessionResetMode ? "Use current-password check" : "Forgot password? Use this session"}
         </button>
       </div>
     </div>

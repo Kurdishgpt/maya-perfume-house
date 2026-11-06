@@ -130,6 +130,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/change-password/session:
+    post:
+      operationId: resetAdminPasswordFromSession
+      tags: [admin]
+      summary: Reset the administrator password from an active session
+      description: Requires the current administrator unlock session. Replaces the password hash and revokes other admin sessions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPasswordSessionResetInput"
+      responses:
+        "200":
+          description: Password reset and the current administrator session renewed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPasswordChangeResponse"
+        "400":
+          description: The new password does not meet requirements.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: An active administrator session is required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: Password reset is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /admin/passcode/recover:
     post:
       operationId: recoverAdminPasscode
@@ -1407,6 +1444,14 @@ components:
           type: string
           minLength: 1
           maxLength: 256
+        new_passcode:
+          type: string
+          minLength: 12
+          maxLength: 128
+    AdminPasswordSessionResetInput:
+      type: object
+      required: [new_passcode]
+      properties:
         new_passcode:
           type: string
           minLength: 12

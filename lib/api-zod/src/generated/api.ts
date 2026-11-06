@@ -68,6 +68,24 @@ export const ChangeAdminPasswordResponse = zod.object({
 
 
 /**
+ * Requires the current administrator unlock session. Replaces the password hash and revokes other admin sessions.
+ * @summary Reset the administrator password from an active session
+ */
+export const resetAdminPasswordFromSessionBodyNewPasscodeMin = 12;
+export const resetAdminPasswordFromSessionBodyNewPasscodeMax = 128;
+
+
+
+export const ResetAdminPasswordFromSessionBody = zod.object({
+  "new_passcode": zod.string().min(resetAdminPasswordFromSessionBodyNewPasscodeMin).max(resetAdminPasswordFromSessionBodyNewPasscodeMax)
+})
+
+export const ResetAdminPasswordFromSessionResponse = zod.object({
+  "updated": zod.boolean()
+})
+
+
+/**
  * Replaces the password hash and revokes existing admin sessions. Requires a server-managed recovery secret.
  * @summary Reset the administrator password with the recovery key
  */

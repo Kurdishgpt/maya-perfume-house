@@ -12,6 +12,7 @@ export * from './adminPasswordChangeInput';
 export * from './adminPasswordChangeResponse';
 export * from './adminPasswordRecoveryInput';
 export * from './adminPasswordRecoveryResponse';
+export * from './adminPasswordSessionResetInput';
 export * from './autofillFragranceInput';
 export * from './contactMessage';
 export * from './contactMessageInput';

@@ -121,7 +121,7 @@ export async function changeAdminPassword(
   return storeAdminPassword(newPassword, settings?.session_revision ?? 0);
 }
 
-export async function recoverAdminPassword(newPassword: string): Promise<number> {
+export async function resetAdminPassword(newPassword: string): Promise<number> {
   const settings = await getAdminPasswordSettings();
   return storeAdminPassword(newPassword, settings?.session_revision ?? 0);
 }

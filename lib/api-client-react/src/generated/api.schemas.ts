@@ -565,6 +565,14 @@ export interface AdminPasswordChangeInput {
   new_passcode: string;
 }
 
+export interface AdminPasswordSessionResetInput {
+  /**
+     * @minLength 12
+     * @maxLength 128
+     */
+  new_passcode: string;
+}
+
 export interface AdminPasswordChangeResponse {
   updated: boolean;
 }
