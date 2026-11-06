@@ -140,7 +140,14 @@ router.post("/admin/passcode/recover", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Enter the recovery key and a new password of at least 12 characters." });
     return;
   }
-  if (!isAdminRecoveryConfigured() || !process.env.SESSION_SECRET) {
+  const recoveryKeyConfigured = isAdminRecoveryConfigured();
+  const sessionSigningConfigured = Boolean(process.env.SESSION_SECRET);
+  if (!recoveryKeyConfigured || !sessionSigningConfigured) {
+    req.log.warn({
+      recovery_key_present: Boolean(process.env.ADMIN_PASSWORD_RECOVERY_KEY),
+      recovery_key_length_valid: recoveryKeyConfigured,
+      session_signing_configured: sessionSigningConfigured,
+    }, "Administrator recovery configuration is incomplete");
     res.status(503).json({ error: "Administrator recovery is not configured." });
     return;
   }
