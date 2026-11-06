@@ -27,6 +27,7 @@ Set these Worker runtime variables/secrets in Cloudflare:
 - Variable: `VITE_SUPABASE_URL`
 - Secret: `SUPABASE_SERVICE_ROLE_KEY`
 - Secret: `ADMIN_PANEL_PASSWORD`
+- Secret: `ADMIN_PASSWORD_RECOVERY_KEY`
 - Secret: `SESSION_SECRET`
 - Secret: `GEMINI_API_KEY`
 
@@ -54,6 +55,14 @@ The configured Worker `ADMIN_PANEL_PASSWORD` remains the initial password until
 the administrator changes it. The replacement is stored only as a salted
 PBKDF2 hash in the private `admin_auth_settings` table. Changing it signs out
 other administrator sessions; the current session receives a new unlock cookie.
+
+For lockout recovery, configure `ADMIN_PASSWORD_RECOVERY_KEY` as a unique,
+high-entropy secret of at least 32 bytes in the deployed runtime. On `/admin`,
+choose **Forgot password? Use recovery key** and enter that key with a new
+12-character-or-longer password. A successful recovery stores only a salted
+PBKDF2 hash in Supabase, revokes other admin sessions, and unlocks the current
+browser. The recovery key is never sent in the client bundle or written to the
+database; rotate it in the secret manager if it is exposed.
 
 ## Cloudflare-specific limits
 

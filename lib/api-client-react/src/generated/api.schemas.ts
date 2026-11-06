@@ -569,6 +569,23 @@ export interface AdminPasswordChangeResponse {
   updated: boolean;
 }
 
+export interface AdminPasswordRecoveryInput {
+  /**
+     * @minLength 32
+     * @maxLength 256
+     */
+  recovery_key: string;
+  /**
+     * @minLength 12
+     * @maxLength 128
+     */
+  new_passcode: string;
+}
+
+export interface AdminPasswordRecoveryResponse {
+  recovered: boolean;
+}
+
 export interface AutofillFragranceInput {
   /**
      * @minLength 2

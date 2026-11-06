@@ -728,6 +728,9 @@ button, a, input, textarea, select { -webkit-tap-highlight-color:transparent; }
 .mc-admin-gate-card input:focus { border-color:var(--mc-turq); box-shadow:0 0 0 3px #00A6A622; }
 .mc-admin-gate-card button { margin-top:16px; height:50px; border-radius:999px; border:1px solid #D9AD4566; background:var(--mc-teal-dk); color:var(--mc-champ); font-weight:800; letter-spacing:.08em; text-transform:uppercase; font-size:12px; cursor:pointer; }
 .mc-admin-gate-card button:disabled { opacity:.6; }
+.mc-admin-gate-card button.mc-gate-secondary { margin:10px auto 0; height:auto; padding:8px 4px; border:0; background:transparent; color:var(--mc-teal); font-size:12px; font-weight:700; letter-spacing:0; text-transform:none; }
+.mc-admin-gate-card button.mc-gate-secondary:hover { color:#00666c; }
+.mc-admin-gate-card button.mc-gate-secondary:focus-visible { outline:2px solid var(--mc-turq); outline-offset:3px; }
 .mc-admin-gate-card a { margin-top:16px; text-align:center; font-size:12px; color:var(--mc-teal); }
 .mc-gate-error { color:#9b4a3b!important; margin-top:10px!important; }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useGetAdminPasscodeStatus, useUnlockAdminPasscode } from '@workspace/api-client-react';
+import { useGetAdminPasscodeStatus, useRecoverAdminPasscode, useUnlockAdminPasscode } from '@workspace/api-client-react';
 import { Link, Redirect, Route, Router as WouterRouter, Switch, useLocation } from 'wouter';
 import { LockKeyhole } from 'lucide-react';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -153,19 +153,66 @@ function StoreShell() {
 function AdminGate() {
   const status = useGetAdminPasscodeStatus();
   const unlock = useUnlockAdminPasscode();
+  const recovery = useRecoverAdminPasscode();
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [recoveryKey, setRecoveryKey] = useState('');
+  const [newPasscode, setNewPasscode] = useState('');
+  const [confirmNewPasscode, setConfirmNewPasscode] = useState('');
   const unlocked = status.data?.unlocked;
   const submit = async (e: FormEvent) => { e.preventDefault(); setError(''); try { await unlock.mutateAsync({ data: { passcode } }); await status.refetch(); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Admin access could not be checked. Please try again.'); } };
+  const submitRecovery = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (newPasscode.length < 12) {
+      setError('Use at least 12 characters for the new password.');
+      return;
+    }
+    if (newPasscode !== confirmNewPasscode) {
+      setError('The new passwords do not match.');
+      return;
+    }
+    try {
+      await recovery.mutateAsync({ data: { recovery_key: recoveryKey, new_passcode: newPasscode } });
+      setRecoveryKey('');
+      setNewPasscode('');
+      setConfirmNewPasscode('');
+      await status.refetch();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Password recovery could not be completed. Please try again.');
+    }
+  };
+  const closeRecovery = () => {
+    setRecoveryMode(false);
+    setRecoveryKey('');
+    setNewPasscode('');
+    setConfirmNewPasscode('');
+    setError('');
+  };
   if (status.isLoading) return <div className="mc-admin-gate"><div className="mc-admin-gate-card is-loading" data-testid="state-admin-checking"><Crown className="mc-gate-crown"/><p>Checking private access</p></div></div>;
   if (status.isError) return <div className="mc-admin-gate"><div className="mc-admin-gate-card"><Crown className="mc-gate-crown"/><h1>Admin access unavailable</h1><p role="alert">The server could not check your access. Please try again.</p><button onClick={() => void status.refetch()} disabled={status.isFetching} data-testid="button-retry-admin-access">{status.isFetching ? 'Checking…' : 'Try again'}</button><Link href="/">Return to storefront</Link></div></div>;
   if (unlocked) return <AdminPanel/>;
+  if (recoveryMode) return <div className="mc-admin-gate"><form onSubmit={(e) => void submitRecovery(e)} className="mc-admin-gate-card" data-testid="form-admin-recovery">
+    <Crown className="mc-gate-crown"/><span className="mc-kicker">MAYA COLLECTION · PRIVATE</span><h1>Recover admin access</h1><p>Use the recovery key stored in the managed secrets, then set a new administrator password.</p>
+    <label htmlFor="admin-recovery-key"><LockKeyhole size={13}/> Recovery key</label>
+    <input id="admin-recovery-key" type="password" autoComplete="off" required minLength={32} maxLength={256} value={recoveryKey} onChange={(e) => setRecoveryKey(e.target.value)} data-testid="input-admin-recovery-key"/>
+    <label htmlFor="admin-recovery-new-password">New password</label>
+    <input id="admin-recovery-new-password" type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={newPasscode} onChange={(e) => setNewPasscode(e.target.value)} data-testid="input-admin-recovery-new-password"/>
+    <label htmlFor="admin-recovery-confirm-password">Confirm new password</label>
+    <input id="admin-recovery-confirm-password" type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={confirmNewPasscode} onChange={(e) => setConfirmNewPasscode(e.target.value)} data-testid="input-admin-recovery-confirm-password"/>
+    {error && <p role="alert" className="mc-gate-error" data-testid="text-admin-recovery-error">{error}</p>}
+    <button disabled={recovery.isPending} data-testid="button-admin-recover">{recovery.isPending ? 'Resetting…' : 'Reset password'}</button>
+    <button type="button" className="mc-gate-secondary" onClick={closeRecovery} data-testid="button-admin-recovery-back">Back to sign in</button>
+    <Link href="/" data-testid="link-admin-store">Return to storefront</Link>
+  </form></div>;
   return <div className="mc-admin-gate"><form onSubmit={submit} className="mc-admin-gate-card">
     <Crown className="mc-gate-crown"/><span className="mc-kicker">MAYA COLLECTION · PRIVATE</span><h1>Admin access</h1><p>Enter your administrator passcode to continue.</p>
     <label htmlFor="admin-passcode"><LockKeyhole size={13}/> Passcode</label>
-    <input id="admin-passcode" type="password" required value={passcode} onChange={(e) => setPasscode(e.target.value)} data-testid="input-admin-passcode"/>
+    <input id="admin-passcode" type="password" autoComplete="current-password" required value={passcode} onChange={(e) => setPasscode(e.target.value)} data-testid="input-admin-passcode"/>
     {error && <p role="alert" className="mc-gate-error">{error}</p>}
     <button disabled={unlock.isPending} data-testid="button-admin-unlock">{unlock.isPending ? 'Verifying' : 'Unlock panel'}</button>
+    <button type="button" className="mc-gate-secondary" onClick={() => { setRecoveryMode(true); setError(''); }} data-testid="button-open-admin-recovery">Forgot password? Use recovery key</button>
     <Link href="/" data-testid="link-admin-store">Return to storefront</Link>
   </form></div>;
 }

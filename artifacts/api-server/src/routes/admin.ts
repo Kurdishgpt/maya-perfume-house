@@ -3,22 +3,27 @@ import {
   ChangeAdminPasswordBody,
   ChangeAdminPasswordResponse,
   GetAdminPasscodeStatusResponse,
+  RecoverAdminPasscodeBody,
+  RecoverAdminPasscodeResponse,
   UnlockAdminPasscodeBody,
   UnlockAdminPasscodeResponse,
 } from "@workspace/api-zod";
-import { changeAdminPassword, verifyAdminPassword } from "../lib/adminPassword";
+import { changeAdminPassword, recoverAdminPassword, verifyAdminPassword } from "../lib/adminPassword";
 import {
   clearAdminPasscodeCookie,
+  isAdminRecoveryConfigured,
   isAdminPasscodeUnlocked,
   requireAdmin,
   setAdminPasscodeCookie,
   verifyAdminPasscode,
+  verifyAdminRecoveryKey,
 } from "../middlewares/requireAdmin";
 
 const router: IRouter = Router();
 const maxAttempts = 5;
 const attemptWindowMs = 15 * 60 * 1000;
 const failedAttempts = new Map<string, { count: number; startedAt: number }>();
+const failedRecoveryAttempts = new Map<string, { count: number; startedAt: number }>();
 
 router.use("/admin/passcode", (_req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
@@ -126,6 +131,50 @@ router.post("/admin/change-password", requireAdmin, async (req, res): Promise<vo
   } catch (error) {
     req.log.error({ err: error }, "Could not change administrator password");
     res.status(503).json({ error: "Password changes are unavailable until the administrator security migration is applied." });
+  }
+});
+
+router.post("/admin/passcode/recover", async (req, res): Promise<void> => {
+  const parsed = RecoverAdminPasscodeBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Enter the recovery key and a new password of at least 12 characters." });
+    return;
+  }
+  if (!isAdminRecoveryConfigured() || !process.env.SESSION_SECRET) {
+    res.status(503).json({ error: "Administrator recovery is not configured." });
+    return;
+  }
+
+  const clientIp = req.ip || "unknown";
+  const now = Date.now();
+  const current = failedRecoveryAttempts.get(clientIp);
+  if (current && now - current.startedAt < attemptWindowMs && current.count >= maxAttempts) {
+    res.status(429).json({ error: "Too many recovery attempts. Wait 15 minutes and try again." });
+    return;
+  }
+  const attempts =
+    current && now - current.startedAt < attemptWindowMs
+      ? current
+      : { count: 0, startedAt: now };
+
+  if (!verifyAdminRecoveryKey(parsed.data.recovery_key)) {
+    attempts.count += 1;
+    failedRecoveryAttempts.set(clientIp, attempts);
+    res.status(403).json({ error: "The recovery key was not accepted." });
+    return;
+  }
+
+  try {
+    const revision = await recoverAdminPassword(parsed.data.new_passcode);
+    failedRecoveryAttempts.delete(clientIp);
+    if (!setAdminPasscodeCookie(res, revision)) {
+      res.status(503).json({ error: "Admin access is not configured." });
+      return;
+    }
+    res.json(RecoverAdminPasscodeResponse.parse({ recovered: true }));
+  } catch (error) {
+    req.log.error({ err: error }, "Could not recover administrator password");
+    res.status(503).json({ error: "Password recovery is temporarily unavailable." });
   }
 });
 

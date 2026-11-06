@@ -130,6 +130,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/passcode/recover:
+    post:
+      operationId: recoverAdminPasscode
+      tags: [admin]
+      summary: Reset the administrator password with the recovery key
+      description: Replaces the password hash and revokes existing admin sessions. Requires a server-managed recovery secret.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPasswordRecoveryInput"
+      responses:
+        "200":
+          description: Password reset and a new administrator session was issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPasswordRecoveryResponse"
+        "400":
+          description: The new password or recovery request is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403":
+          description: Recovery key was not accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Too many recovery attempts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: Password recovery is not configured.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /admin/seo/summary:
     get:
       operationId: getSeoSummary
@@ -1373,6 +1416,24 @@ components:
       required: [updated]
       properties:
         updated:
+          type: boolean
+    AdminPasswordRecoveryInput:
+      type: object
+      required: [recovery_key, new_passcode]
+      properties:
+        recovery_key:
+          type: string
+          minLength: 32
+          maxLength: 256
+        new_passcode:
+          type: string
+          minLength: 12
+          maxLength: 128
+    AdminPasswordRecoveryResponse:
+      type: object
+      required: [recovered]
+      properties:
+        recovered:
           type: boolean
     AutofillFragranceInput:
       type: object

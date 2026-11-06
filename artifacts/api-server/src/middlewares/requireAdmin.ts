@@ -1,6 +1,10 @@
 import { createHmac, createHash, timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { getAdminSessionRevision } from "../lib/adminPassword";
+import {
+  isAdminRecoveryKeyConfigured as hasStrongRecoveryKey,
+  verifyAdminRecoveryKey as verifyRecoveryKey,
+} from "../lib/adminRecoveryKey.mjs";
 
 const passcodeCookieName = "maya_admin_unlock";
 const passcodeCookieMaxAge = 30 * 60;
@@ -73,6 +77,14 @@ export function verifyAdminPasscode(received: string): boolean {
   const receivedDigest = createHash("sha256").update(received).digest();
   const expectedDigest = createHash("sha256").update(adminPasscode).digest();
   return timingSafeEqual(receivedDigest, expectedDigest);
+}
+
+export function isAdminRecoveryConfigured(): boolean {
+  return hasStrongRecoveryKey(process.env.ADMIN_PASSWORD_RECOVERY_KEY);
+}
+
+export function verifyAdminRecoveryKey(received: string): boolean {
+  return verifyRecoveryKey(received, process.env.ADMIN_PASSWORD_RECOVERY_KEY);
 }
 
 export async function requireAdmin(

@@ -68,6 +68,28 @@ export const ChangeAdminPasswordResponse = zod.object({
 
 
 /**
+ * Replaces the password hash and revokes existing admin sessions. Requires a server-managed recovery secret.
+ * @summary Reset the administrator password with the recovery key
+ */
+export const recoverAdminPasscodeBodyRecoveryKeyMin = 32;
+export const recoverAdminPasscodeBodyRecoveryKeyMax = 256;
+
+export const recoverAdminPasscodeBodyNewPasscodeMin = 12;
+export const recoverAdminPasscodeBodyNewPasscodeMax = 128;
+
+
+
+export const RecoverAdminPasscodeBody = zod.object({
+  "recovery_key": zod.string().min(recoverAdminPasscodeBodyRecoveryKeyMin).max(recoverAdminPasscodeBodyRecoveryKeyMax),
+  "new_passcode": zod.string().min(recoverAdminPasscodeBodyNewPasscodeMin).max(recoverAdminPasscodeBodyNewPasscodeMax)
+})
+
+export const RecoverAdminPasscodeResponse = zod.object({
+  "recovered": zod.boolean()
+})
+
+
+/**
  * @summary Get SEO discovery and sitemap status
  */
 export const GetSeoSummaryResponse = zod.object({

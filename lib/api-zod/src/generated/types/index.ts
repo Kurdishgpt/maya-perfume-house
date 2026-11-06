@@ -10,6 +10,8 @@ export * from './adminPasscodeInput';
 export * from './adminPasscodeStatus';
 export * from './adminPasswordChangeInput';
 export * from './adminPasswordChangeResponse';
+export * from './adminPasswordRecoveryInput';
+export * from './adminPasswordRecoveryResponse';
 export * from './autofillFragranceInput';
 export * from './contactMessage';
 export * from './contactMessageInput';

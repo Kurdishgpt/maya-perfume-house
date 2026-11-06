@@ -74,6 +74,25 @@ async function verifyStoredPassword(password: string, settings: AdminPasswordSet
   return constantTimeEqual(received, expected);
 }
 
+async function storeAdminPassword(newPassword: string, sessionRevision: number): Promise<number> {
+  const nextRevision = sessionRevision + 1;
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await derivePasswordHash(newPassword, salt, iterations);
+  const { error } = await getSupabaseAdmin()
+    .from("admin_auth_settings")
+    .upsert({
+      id: 1,
+      password_salt: toBase64Url(salt),
+      password_hash: toBase64Url(hash),
+      hash_iterations: iterations,
+      session_revision: nextRevision,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "id" });
+
+  if (error) throw error;
+  return nextRevision;
+}
+
 export async function verifyAdminPassword(
   password: string,
   fallbackVerify: () => boolean,
@@ -99,20 +118,10 @@ export async function changeAdminPassword(
     : fallbackVerify();
   if (!currentIsValid) return null;
 
-  const nextRevision = (settings?.session_revision ?? 0) + 1;
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const hash = await derivePasswordHash(newPassword, salt, iterations);
-  const { error } = await getSupabaseAdmin()
-    .from("admin_auth_settings")
-    .upsert({
-      id: 1,
-      password_salt: toBase64Url(salt),
-      password_hash: toBase64Url(hash),
-      hash_iterations: iterations,
-      session_revision: nextRevision,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "id" });
+  return storeAdminPassword(newPassword, settings?.session_revision ?? 0);
+}
 
-  if (error) throw error;
-  return nextRevision;
+export async function recoverAdminPassword(newPassword: string): Promise<number> {
+  const settings = await getAdminPasswordSettings();
+  return storeAdminPassword(newPassword, settings?.session_revision ?? 0);
 }
