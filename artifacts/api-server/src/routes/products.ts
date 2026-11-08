@@ -27,6 +27,8 @@ type ProductRow = {
   stock_quantity: number;
   sku: string | null;
   category: "women" | "men" | "unisex";
+  product_type?: string;
+  scent_family?: string | null;
   description: string;
   top_notes: string[];
   middle_notes: string[];
@@ -48,7 +50,9 @@ function toApiProduct(product: ProductRow) {
     bottle_size_ml: product.size_ml,
     stock: product.stock_quantity,
     sku: product.sku ?? "",
-    category: product.category,
+    category: product.scent_family && categoryFor(product.scent_family)
+      ? categoryFor(product.scent_family)!
+      : product.category,
     description: product.description,
     top_notes: product.top_notes ?? [],
     heart_notes: product.middle_notes ?? [],
@@ -148,31 +152,48 @@ function validateSizeVariants(variants: ProductSizeInput[]): string | null {
   return null;
 }
 
-function categoryFor(value: string): "women" | "men" | "unisex" {
-  const category = value.trim().toLowerCase();
-  if (/\b(women|woman|female|femme|ladies)\b/.test(category)) return "women";
-  if (/\b(men|man|male|homme|gentlemen)\b/.test(category)) return "men";
-  if (/\b(unisex|perfect|shared)\b/.test(category)) return "unisex";
-  throw new Error("Choose Women, Men, or Unisex for a perfume category.");
+const beautyCategoryLabels: Record<string, string> = {
+  makeup: "Makeup",
+  skincare: "Skincare",
+  "face-foundation": "Face Foundation",
+  "lipstick-lip-gloss": "Lipstick & Lip Gloss",
+  "mascara-eyeliner": "Mascara & Eyeliner",
+  eyeshadow: "Eyeshadow",
+  "blush-highlighter": "Blush & Highlighter",
+  "face-powder": "Face Powder",
+  "beauty-tools": "Beauty Tools",
+  "hair-care": "Hair Care",
+  "body-care": "Body Care",
+  "beauty-accessories": "Beauty Accessories",
+};
+
+function categoryFor(value: string): string | null {
+  const category = value.trim().toLowerCase().replaceAll("&", "and")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const alias = category === "lipstick-and-lip-gloss" ? "lipstick-lip-gloss"
+    : category === "mascara-and-eyeliner" ? "mascara-eyeliner"
+    : category === "blush-and-highlighter" ? "blush-highlighter"
+    : category;
+  return beautyCategoryLabels[alias] ?? null;
 }
 
 function slugFor(title: string, sku: string): string {
   const base = title.normalize("NFKD").toLowerCase()
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "perfume";
+    .replace(/^-+|-+$/g, "") || "beauty-product";
   const suffix = sku.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return `${base}-${suffix || randomUUID().slice(0, 8)}`.slice(0, 550);
 }
 
 function responseError(error: { code?: string; message?: string }, fallback: string) {
   if (error.code === "23505" || error.code === "409") {
-    return { status: 409, message: "A matching fragrance record already exists." };
+    return { status: 409, message: "A matching beauty product already exists." };
   }
   return { status: 500, message: fallback };
 }
 
-function variantRecord(data: ProductInput, category: "women" | "men" | "unisex", familyPrefix: string, variant: ProductSizeInput, id?: string) {
+function variantRecord(data: ProductInput, categoryLabel: string, familyPrefix: string, variant: ProductSizeInput, id?: string) {
   const sku = `${familyPrefix}-${variant.bottle_size_ml}ML`;
   return {
     ...(id ? { id } : {}),
@@ -180,16 +201,16 @@ function variantRecord(data: ProductInput, category: "women" | "men" | "unisex",
     slug: slugFor(data.title, sku),
     description: data.description,
     brand: data.brand.trim(),
-    category,
+    category: "unisex",
     product_type: "perfume",
     price: variant.price,
     currency: data.currency ?? "USD",
     image_url: data.image_url,
     additional_images: data.gallery_images,
-    scent_family: data.ingredients[0] ?? null,
+    scent_family: categoryLabel,
     top_notes: data.top_notes,
     middle_notes: data.heart_notes,
-    base_notes: data.base_notes,
+    base_notes: [...data.base_notes, ...(data.ingredients.length ? [`Ingredients: ${data.ingredients.join(", ")}`] : [])],
     size_ml: variant.bottle_size_ml,
     stock_quantity: variant.stock,
     sku,
@@ -200,7 +221,7 @@ function variantRecord(data: ProductInput, category: "women" | "men" | "unisex",
 router.get("/products", async (req, res): Promise<void> => {
   if (getSupabaseConfigIssue()) {
     if (!isLegacyDatabaseConfigured) {
-      res.status(503).json({ error: "The fragrance collection is unavailable until Supabase is configured." });
+      res.status(503).json({ error: "The product catalog is unavailable until Supabase is configured." });
       return;
     }
     try {
@@ -210,7 +231,7 @@ router.get("/products", async (req, res): Promise<void> => {
       res.json(ListProductsResponse.parse(rows.map(toLegacyApiProduct)));
     } catch (error) {
       req.log.error({ err: error }, "Legacy product catalog read failed");
-      res.status(503).json({ error: "The fragrance collection is temporarily unavailable." });
+      res.status(503).json({ error: "The product catalog is temporarily unavailable." });
     }
     return;
   }
@@ -219,19 +240,19 @@ router.get("/products", async (req, res): Promise<void> => {
     const { data, error } = await supabase
       .from("products")
       .select("*")
-      .eq("product_type", "perfume")
+      .in("product_type", ["perfume", "cosmetic"])
       .eq("is_active", true)
       .order("created_at", { ascending: false });
     if (error) {
       req.log.error({ code: error.code }, "Supabase product catalog read failed");
-      res.status(503).json({ error: "The fragrance collection is temporarily unavailable." });
+      res.status(503).json({ error: "The product catalog is temporarily unavailable." });
       return;
     }
     res.setHeader("X-Maya-Catalog-Source", "supabase");
     res.json(ListProductsResponse.parse(groupProductRows(data as ProductRow[])));
   } catch (error) {
     req.log.error({ err: error }, "Supabase product catalog request failed");
-    res.status(503).json({ error: "The fragrance collection is temporarily unavailable." });
+    res.status(503).json({ error: "The product catalog is temporarily unavailable." });
   }
 });
 
@@ -248,11 +269,9 @@ router.post("/products", requireAdmin, async (req, res): Promise<void> => {
     res.status(400).json({ error: sizeError });
     return;
   }
-  let category: "women" | "men" | "unisex";
-  try {
-    category = categoryFor(data.category);
-  } catch (error) {
-    res.status(400).json({ error: error instanceof Error ? error.message : "Choose a valid category." });
+  const category = categoryFor(data.category);
+  if (!category) {
+    res.status(400).json({ error: "Choose one of the listed cosmetics and beauty categories." });
     return;
   }
 
@@ -301,7 +320,7 @@ router.patch(
         .from("products")
         .select("*")
         .eq("legacy_id", params.data.id)
-        .eq("product_type", "perfume")
+        .in("product_type", ["perfume", "cosmetic"])
         .maybeSingle();
 
       if (currentError || !current) {
@@ -313,7 +332,7 @@ router.patch(
       const currentRow = current as ProductRow;
       const familyPrefix = skuFamilyPrefix(currentRow.sku);
       const { data: familyRows, error: familyError } = familyPrefix
-        ? await supabase.from("products").select("*").eq("product_type", "perfume").like("sku", `${familyPrefix}-%`)
+        ? await supabase.from("products").select("*").in("product_type", ["perfume", "cosmetic"]).like("sku", `${familyPrefix}-%`)
         : { data: [currentRow], error: null };
       if (familyError) {
         req.log.error({ code: familyError.code }, "Supabase product variants could not be loaded");
@@ -327,11 +346,11 @@ router.patch(
           res.status(400).json({ error: sizeError });
           return;
         }
-        let category: "women" | "men" | "unisex";
-        try {
-          category = data.category !== undefined ? categoryFor(data.category) : currentRow.category;
-        } catch (error) {
-          res.status(400).json({ error: error instanceof Error ? error.message : "Choose a valid category." });
+        const category = categoryFor(
+          data.category ?? (categoryFor(currentRow.scent_family ?? "") ? currentRow.scent_family! : "Makeup"),
+        );
+        if (!category) {
+          res.status(400).json({ error: "Choose one of the listed cosmetics and beauty categories." });
           return;
         }
         const familyData: ProductInput = {
@@ -389,18 +408,18 @@ router.patch(
       if (data.brand !== undefined) values.brand = data.brand.trim();
       if (data.currency !== undefined) values.currency = data.currency;
       if (data.category !== undefined) {
-        try {
-          values.category = categoryFor(data.category);
-        } catch (error) {
-          res.status(400).json({ error: error instanceof Error ? error.message : "Choose a valid category." });
+        const category = categoryFor(data.category);
+        if (!category) {
+          res.status(400).json({ error: "Choose one of the listed cosmetics and beauty categories." });
           return;
         }
+        values.category = "unisex";
+        values.scent_family = category;
       }
       if (data.description !== undefined) values.description = data.description;
       if (data.top_notes !== undefined) values.top_notes = data.top_notes;
       if (data.heart_notes !== undefined) values.middle_notes = data.heart_notes;
       if (data.base_notes !== undefined) values.base_notes = data.base_notes;
-      if (data.ingredients !== undefined) values.scent_family = data.ingredients[0] ?? null;
       if (data.image_url !== undefined) values.image_url = data.image_url;
       if (data.gallery_images !== undefined) values.additional_images = data.gallery_images;
       const activeIds = (familyRows as ProductRow[]).filter((row) => row.is_active !== false).map((row) => row.id);
@@ -447,7 +466,7 @@ router.delete(
         .from("products")
         .select("*")
         .eq("legacy_id", params.data.id)
-        .eq("product_type", "perfume")
+        .in("product_type", ["perfume", "cosmetic"])
         .maybeSingle();
       if (readError) {
         req.log.error({ code: readError.code }, "Supabase product lookup failed before deletion");
@@ -460,7 +479,7 @@ router.delete(
       }
       const familyPrefix = skuFamilyPrefix((product as ProductRow).sku);
       const { data: familyRows, error: familyError } = familyPrefix
-        ? await supabase.from("products").select("id").eq("product_type", "perfume").like("sku", `${familyPrefix}-%`)
+        ? await supabase.from("products").select("id").in("product_type", ["perfume", "cosmetic"]).like("sku", `${familyPrefix}-%`)
         : { data: [{ id: (product as ProductRow).id }], error: null };
       if (familyError) {
         req.log.error({ code: familyError.code }, "Supabase product variants could not be loaded before deletion");

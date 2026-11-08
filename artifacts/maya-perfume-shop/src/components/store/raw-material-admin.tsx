@@ -167,7 +167,7 @@ export function RawMaterialAdmin({ notify }: { notify: (tone: "success" | "error
     const approved = window.confirm(
       `Import the reviewed ${preview.discovered}-product preview for ${scope}?\n\n` +
       `${preview.created} new items and ${preview.updated} existing supplier records will be saved at their original listed prices and units. ` +
-      `Your existing material edits and perfume catalog will remain unchanged.`,
+      `Your existing material edits and beauty catalog will remain unchanged.`,
     );
     if (!approved) return;
     try {
@@ -263,7 +263,7 @@ export function RawMaterialAdmin({ notify }: { notify: (tone: "success" | "error
       <div>
         <p className="text-[9px] font-semibold uppercase tracking-[.22em] text-[#a9956d]">RAW MATERIALS · {String(materials.length).padStart(2, "0")} SAVED</p>
         <h1 className="mt-2 font-serif text-[34px] leading-tight text-[#eee9df] md:text-[42px]">Material library</h1>
-        <p className="mt-2 max-w-lg text-[12px] leading-5 text-[#8c9691]">Search and manage Hillen99 perfumery materials. Material listings and prices are separate from the perfume catalog.</p>
+        <p className="mt-2 max-w-lg text-[12px] leading-5 text-[#8c9691]">Search and manage ingredient listings. Material listings and prices are separate from the beauty product catalog.</p>
       </div>
       <div className="flex flex-wrap gap-2">
         <button onClick={exportCsv} disabled={materials.length === 0} className="inline-flex h-10 items-center gap-2 rounded-md border border-white/10 px-3 text-[9px] uppercase tracking-wider text-[#d8d1bc] disabled:opacity-40" data-testid="button-export-raw-csv"><Download size={13}/>CSV</button>

@@ -34,7 +34,7 @@ export default function ProductPage() {
     setQty(1);
   }, [product?.id]);
 
-  if (!product) return <div className="mc-page"><PageBar title="MAYA COLLECTION" onBack={back}/>
+  if (!product) return <div className="mc-page"><PageBar title="MAYA BEAUTY" onBack={back}/>
     {loading ? <div className="mc-detail-skeleton"><span/><i/><i/></div> : <div className="mc-state"><p>{t('noProducts')}</p><Link href="/collection" className="mc-ghost-btn">{t('browse')}</Link></div>}</div>;
 
   const saved = wishlist.includes(product.id);
@@ -54,25 +54,25 @@ export default function ProductPage() {
   const noteRows = [['top', product.top_notes], ['heart', product.heart_notes], ['base', product.base_notes]] as const;
 
   return <div className="mc-page mc-product">
-    <PageBar title="MAYA COLLECTION" onBack={back} right={<button onClick={() => toggleWish(product.id)} className={`mc-round-btn mc-heart ${saved ? 'is-saved' : ''}`} aria-pressed={saved} aria-label={t('wishlist')} data-testid="button-detail-wishlist"><Heart/></button>}/>
+     <PageBar title="MAYA BEAUTY" onBack={back} right={<button onClick={() => toggleWish(product.id)} className={`mc-round-btn mc-heart ${saved ? 'is-saved' : ''}`} aria-pressed={saved} aria-label={t('wishlist')} data-testid="button-detail-wishlist"><Heart/></button>}/>
     <div className="mc-product-layout">
       <div className="mc-gallery">
-        <div className="mc-gallery-main"><img key={active} src={images[active] || '/images/hero-fragrance.png'} alt={product.title}/></div>
+        <div className="mc-gallery-main"><img key={active} src={images[active] || '/images/beauty-hero.jpg'} alt={product.title}/></div>
         {images.length > 1 && <div className="mc-thumbs">{images.map((src, i) => <button key={src + i} onClick={() => setActive(i)} className={active === i ? 'is-active' : ''} aria-label={`${product.title} ${i + 1}`} data-testid={`button-gallery-${i + 1}`}><img src={src} alt=""/></button>)}</div>}
       </div>
       <div className="mc-info">
-        <span className="mc-kicker">{[product.brand, product.category && /(unisex|perfect|shared|everyone)/i.test(product.category) ? t('unisex') : product.category].filter(Boolean).join(' · ')}</span>
+        <span className="mc-kicker">{[product.brand, product.category].filter(Boolean).join(' · ')}</span>
         <h2 className="mc-product-title" data-testid="text-product-title">{product.title}</h2>
         <div className="mc-price-row"><strong dir="ltr" data-testid="text-product-price">{formatMoney(selectedPrice, product.currency)}</strong>
           <span className={`mc-stock ${selectedStock > 0 ? '' : 'is-out'}`} data-testid="text-product-stock">{selectedStock > 0 ? `${t('stock')} · ${selectedStock}` : t('soldOut')}</span></div>
         <p className="mc-fine">{t('currencyNote')}</p>
         {product.description && <p className="mc-desc">{product.description}</p>}
 
-        <div className="mc-notes">
+        {(noteRows.some(([, values]) => values.length > 0) || product.ingredients.length > 0) && <div className="mc-notes">
           <h3>{t('notes')}</h3>
-          {noteRows.map(([k, vals]) => <div key={k} className="mc-note"><span>{t(k)}</span><p>{vals.join(', ') || '-'}</p></div>)}
+          {noteRows.filter(([, values]) => values.length > 0).map(([k, vals]) => <div key={k} className="mc-note"><span>{t(k)}</span><p>{vals.join(', ')}</p></div>)}
           {product.ingredients.length > 0 && <div className="mc-note"><span>{t('ingredientsTitle')}</span><p>{product.ingredients.join(', ')}</p></div>}
-        </div>
+        </div>}
 
         <h3 className="mc-label">{t('volume')}</h3>
         <div className="mc-sizes" data-testid="select-product-size">{variants.map((variant,index)=><button type="button" key={`${variant.supabase_id ?? product.id}-${variant.bottle_size_ml ?? index}`} onClick={()=>{setSelectedSize(variant.bottle_size_ml);setQty(1);}} className={selectedVariant===variant?'is-active':''} aria-pressed={selectedVariant===variant} aria-label={`${variant.bottle_size_ml ? `${variant.bottle_size_ml} ml` : t('sizeUnknown')}, ${formatMoney(variant.price,product.currency)}, ${variant.stock} in stock`} data-testid={`button-size-${variant.bottle_size_ml ?? index}`}><span dir="ltr">{variant.bottle_size_ml ? `${variant.bottle_size_ml} ml` : t('sizeUnknown')}</span><small dir="ltr">{formatMoney(variant.price,product.currency)}</small></button>)}</div>

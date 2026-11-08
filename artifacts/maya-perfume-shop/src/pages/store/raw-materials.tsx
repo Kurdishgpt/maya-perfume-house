@@ -97,7 +97,7 @@ export default function RawMaterialsPage() {
   return <div className="mc-page" data-testid="page-raw-materials">
     <PageBar title={t('rawMaterials')} onBack={back}/>
     <section className="mc-raw-intro">
-      <span className="mc-kicker" dir="ltr">MAYA COLLECTION · {t('rawMaterialsKicker')}</span>
+      <span className="mc-kicker" dir="ltr">MAYA BEAUTY · {t('rawMaterialsKicker')}</span>
       <h2>{t('rawIntroTitle')}</h2>
       <p>{t('rawIntroBody')}</p>
     </section>

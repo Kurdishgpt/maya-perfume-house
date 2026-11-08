@@ -37,7 +37,7 @@ async function search(path: string, query: URLSearchParams): Promise<unknown> {
 
 export async function searchPerfumeImages(query: string) {
   const data = await search("/res/v1/images/search", new URLSearchParams({
-    q: `${query} perfume bottle product`, count: "16", safesearch: "strict",
+    q: `${query} cosmetics makeup skincare product`, count: "16", safesearch: "strict",
   })) as { results?: ImageHit[] };
   const seen = new Set<string>();
   return (data.results ?? []).flatMap((hit) => {
@@ -57,7 +57,7 @@ export async function searchPerfumeImages(query: string) {
 
 export async function searchPerfumeFacts(query: string) {
   const data = await search("/res/v1/web/search", new URLSearchParams({
-    q: `${query} perfume official fragrance top heart base notes`,
+    q: `${query} cosmetics beauty product official shades ingredients`,
     count: "5", safesearch: "strict", extra_snippets: "true",
   })) as { web?: { results?: WebHit[] } };
   return (data.web?.results ?? []).flatMap((hit) => {

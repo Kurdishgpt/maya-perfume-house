@@ -10,9 +10,9 @@ import { storePhone, storePhoneHref, whatsappLink } from '@/lib/store';
 const menuLinks = [
   { href: '/', key: 'home' },
   { href: '/collection', key: 'collection' },
-  { href: '/collection?cat=women', key: 'women' },
-  { href: '/collection?cat=men', key: 'men' },
-  { href: '/collection?cat=unisex', key: 'perfect' },
+  { href: '/collection?cat=makeup', key: 'women' },
+  { href: '/collection?cat=skincare', key: 'men' },
+  { href: '/collection?cat=beautyCare', key: 'perfect' },
   { href: '/raw-material', key: 'ingredients' },
   { href: '/wishlist', key: 'wishlist' },
   { href: '/bag', key: 'bags' },

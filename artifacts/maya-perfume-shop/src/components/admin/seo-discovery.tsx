@@ -246,7 +246,7 @@ export default function SeoDiscovery() {
     <div className="relative z-10 mx-auto max-w-[1500px] px-4 py-6 md:px-8 md:py-9">
       <header className="flex flex-col justify-between gap-5 border-b border-white/[.08] pb-6 md:flex-row md:items-end">
         <div>
-          <p className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[.22em] text-[#c3a769]"><Globe2 size={13}/> Maya Collection · Search operations</p>
+          <p className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[.22em] text-[#c3a769]"><Globe2 size={13}/> Maya Beauty · Search operations</p>
           <h1 className="mt-2 font-serif text-[34px] leading-tight tracking-[-.02em] text-[#eee9df] md:text-[42px]" data-testid="heading-seo-discovery">SEO discovery</h1>
           <p className="mt-2 max-w-2xl text-[12px] leading-5 text-[#939e97]">A clear view of public pages, crawl health and sitemap coverage. Storefront content stays untouched.</p>
         </div>

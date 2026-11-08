@@ -13,11 +13,10 @@ export default function Welcome() {
     window.setTimeout(() => navigate('/'), 420);
   };
   return <section className={`mc-wel ${leaving ? 'is-leaving' : ''}`} data-testid="page-welcome">
-    <img src="/images/reference/welcome-clean.jpg" alt="MAYA Collection Extrait de Parfum" className="mc-wel-bg" dir="ltr" fetchPriority="high"
-      onError={(e) => { const el = e.currentTarget; if (!el.dataset.fb) { el.dataset.fb = '1'; el.src = '/images/welcome-signature.jpg'; } }}/>
+    <img src="/images/beauty-hero.jpg" alt="Maya Beauty cosmetics and skincare collection" className="mc-wel-bg" dir="ltr" fetchPriority="high"/>
     <div className="mc-wel-shade"/>
     <div className="mc-wel-top">
-      <div className="mc-wel-brand" dir="ltr"><span/><img src="/images/maya-emblem.png" alt="" className="mc-wel-emblem"/><strong>MAYA COLLECTION</strong><span/></div>
+      <div className="mc-wel-brand" dir="ltr"><span/><img src="/images/maya-emblem.png" alt="" className="mc-wel-emblem"/><strong>MAYA BEAUTY</strong><span/></div>
       <h1><span>{t('welcomeTitle1')}</span><em>{t('welcomeTitle2')}</em></h1>
       <p>{t('welcomeBody')}</p>
     </div>

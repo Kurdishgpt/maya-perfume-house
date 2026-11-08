@@ -26,7 +26,7 @@ export default function Bag() {
     {!cart.length && !rawMaterialCart.length ? <EmptyState icon="bag" text={t('emptyBag')} action={t('browse')}/> : <div className="mc-bag-layout">
       <ul className="mc-lines">
         {cart.map(({ product, variant, quantity, size }) => <li key={`${product.id}-${size}`} className="mc-line" data-testid={`line-${product.id}-${size}`}>
-          <Link href={`/product/${product.id}`} className="mc-line-img"><img src={product.image_url || '/images/hero-fragrance.png'} alt={product.title}/></Link>
+          <Link href={`/product/${product.id}`} className="mc-line-img"><img src={product.image_url || '/images/beauty-hero.jpg'} alt={product.title}/></Link>
           <div className="mc-line-copy">
             <Link href={`/product/${product.id}`}><strong>{product.title}</strong></Link>
             <span dir="ltr">{size ? `${size} ml` : t('sizeUnknown')} · {formatMoney(cartLinePrice({ product, variant, quantity, size }), product.currency)}</span>

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useListProducts, type Product as ApiProduct, type RawMaterial } from '@workspace/api-client-react';
-import { cartLinePrice, cartLineProductId, copy, type CartLine, type Language, type StoreProduct, type T } from '@/lib/store';
+import { cartLinePrice, cartLineProductId, copy, isBeautyProduct, type CartLine, type Language, type StoreProduct, type T } from '@/lib/store';
 import { totalByCurrency, type MoneyTotals } from '@/lib/money';
 
 export type RawMaterialBagLine = Pick<RawMaterial, 'id' | 'supabase_id' | 'source_id' | 'name' | 'category' | 'price' | 'currency' | 'unit' | 'image_url'> & { quantity: number };
@@ -63,7 +63,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem('maya-wishlist', JSON.stringify(wishlist)); }, [wishlist]);
   useEffect(() => { localStorage.setItem('maya-cart', JSON.stringify(cart)); }, [cart]);
   useEffect(() => { localStorage.setItem('maya-raw-material-cart', JSON.stringify(rawMaterialCart)); }, [rawMaterialCart]);
-  const products = (catalog.data ?? emptyProducts) as StoreProduct[];
+  const products = useMemo(
+    () => ((catalog.data ?? emptyProducts) as StoreProduct[]).filter(isBeautyProduct),
+    [catalog.data],
+  );
   // Keep bag lines in sync with live catalog data (price, image, title) when available.
   const liveCart = useMemo(() => synchronizeCart(cart, products), [cart, products]);
   useEffect(() => {

@@ -1,3 +1,4 @@
 - [Store data source](store-data-source.md) — Supabase is the live store; legacy PostgreSQL is opt-in for one-time migration only.
+- [Cosmetics catalog compatibility](cosmetics-catalog-compatibility.md) — Preserve the current product table shape when adding beauty categories; avoid unverified database migrations.
 - [Cloudflare Workers runtime](cloudflare-workers-runtime.md) — Keep the edge entry fetch-native; Node servers and Replit sidecars/connectors are unavailable in Workers.
 - [Perfume size variants](perfume-size-variants.md) — Keep each size tied to its own product ID so checkout validates its price and stock.

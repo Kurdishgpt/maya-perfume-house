@@ -63,7 +63,7 @@ export default function ContactPage() {
 
   return <main className="mc-page mc-contact" data-testid="page-contact">
     <section className="mc-contact-hero">
-      <img src="/images/hero-bottle.jpg" alt={t('contactHeroImageAlt')} className="mc-contact-hero-image"/>
+      <img src="/images/beauty-hero.jpg" alt={t('contactHeroImageAlt')} className="mc-contact-hero-image"/>
       <div className="mc-contact-hero-shade"/>
       <div className="mc-contact-hero-copy">
         <span className="mc-kicker">{t('contactEyebrow')}</span>

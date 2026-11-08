@@ -42,7 +42,7 @@ export default function RawMaterialDetailPage() {
         {query.isError && <button className="mc-ghost-btn" onClick={() => void query.refetch()} data-testid="button-raw-detail-retry"><RefreshCw size={15}/> {t("retry")}</button>}
         <Link href="/raw-material" className="mc-ghost-btn">Browse raw materials</Link>
       </div> : <section className="mc-raw-detail-page">
-        <p className="mc-kicker" dir="ltr">MAYA COLLECTION · {t("rawMaterialsKicker")}</p>
+        <p className="mc-kicker" dir="ltr">MAYA BEAUTY · {t("rawMaterialsKicker")}</p>
         <MaterialCard m={material} index={0} detailPageLink={false}/>
         <Link href="/raw-material" className="mc-raw-back-link">Browse all raw materials</Link>
       </section>}

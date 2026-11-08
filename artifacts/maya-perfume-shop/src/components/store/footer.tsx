@@ -16,10 +16,10 @@ export function Footer() {
   const { t, language, setLanguage } = useStore();
   return <footer className="mc-foot">
     <div className="mc-foot-inner">
-      <Link href="/" className="mc-foot-logo" aria-label="MAYA COLLECTION" data-testid="link-footer-logo" dir="ltr">
+      <Link href="/" className="mc-foot-logo" aria-label="MAYA BEAUTY" data-testid="link-footer-logo" dir="ltr">
         <img src="/images/maya-emblem.png" alt="" aria-hidden="true"/>
         <span className="mc-wordmark-name">MAYA</span>
-        <span className="mc-wordmark-sub">COLLECTION</span>
+        <span className="mc-wordmark-sub">COSMETICS &amp; BEAUTY</span>
       </Link>
       <div className="mc-foot-acc">
         <Section title={t('language')} id="language">

@@ -24,7 +24,7 @@ export function PerfumeResearch({ draft, suggestion, setField }: Props) {
   }, [suggestion]);
   const find = async () => {
     const term = (query || `${draft.brand} ${draft.title}`).trim();
-    if (term.length < 2 || term.length > 120) { setError("Enter a perfume and brand name between 2 and 120 characters."); return; }
+    if (term.length < 2 || term.length > 120) { setError("Enter a beauty product and brand name between 2 and 120 characters."); return; }
     setError(""); setImages([]); setSearched(false);
     try {
       const result = await search.mutateAsync({ data: { query: term } });
@@ -34,16 +34,16 @@ export function PerfumeResearch({ draft, suggestion, setField }: Props) {
   const toggleGallery = (url: string) => setField("gallery_images",
     draft.gallery_images.includes(url) ? draft.gallery_images.filter((u) => u !== url) :
       [...draft.gallery_images, url].slice(0, 8));
-  return <section className="mt-5 rounded-lg border border-[#D9AD45]/25 p-3 sm:p-4" aria-label="Perfume photo search">
-    <h3 className="font-serif text-lg text-[#F0D49A]">Find perfume photos</h3>
+  return <section className="mt-5 rounded-lg border border-[#D9AD45]/25 p-3 sm:p-4" aria-label="Beauty product photo search">
+    <h3 className="font-serif text-lg text-[#F0D49A]">Find beauty product photos</h3>
     <p className="mt-1 text-xs leading-5 text-[#b5c8c5]">Powered by Brave. Check the bottle, concentration and permission to use each photo. External images may stop loading; upload your own copy when you have permission.</p>
     <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-      <input aria-label="Photo search query" value={query} maxLength={120} onChange={(e) => setQuery(e.target.value)} placeholder={draft.title || "Dior Sauvage Eau de Parfum"} className="h-11 min-w-0 flex-1 rounded border border-white/20 bg-[#00262a] px-3 text-sm text-white" data-testid="input-photo-search"/>
+      <input aria-label="Photo search query" value={query} maxLength={120} onChange={(e) => setQuery(e.target.value)} placeholder={draft.title || "Velvet Matte Lipstick"} className="h-11 min-w-0 flex-1 rounded border border-white/20 bg-[#00262a] px-3 text-sm text-white" data-testid="input-photo-search"/>
       <button type="button" disabled={search.isPending} onClick={() => void find()} className="flex h-11 items-center justify-center gap-2 rounded border border-[#D9AD45]/50 px-4 text-xs text-[#F0D49A] disabled:opacity-50" data-testid="button-search-photos">{search.isPending ? <Loader2 className="animate-spin" size={16}/> : <Search size={16}/>}Search photos</button>
     </div>
     {error && <p role="alert" className="mt-3 text-xs text-red-200">{error}</p>}
     {suggestion?.warnings?.map((warning) => <p key={warning} role="status" className="mt-2 text-xs text-amber-200">{warning}</p>)}
-    {!search.isPending && searched && !images.length && !error && <p className="mt-3 text-xs text-[#b5c8c5]">No photos found. Try the exact brand, perfume name and concentration.</p>}
+    {!search.isPending && searched && !images.length && !error && <p className="mt-3 text-xs text-[#b5c8c5]">No photos found. Try the exact brand and product name.</p>}
     <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
       {images.map((image, i) => <article key={image.image_url} className="min-w-0 rounded border border-white/15 bg-[#00262a] p-2" data-testid={`photo-result-${i}`}>
         <img src={image.thumbnail_url} alt={image.title} loading="lazy" referrerPolicy="no-referrer" className="aspect-square w-full rounded bg-white object-contain" onError={(e) => { e.currentTarget.hidden = true; }}/>

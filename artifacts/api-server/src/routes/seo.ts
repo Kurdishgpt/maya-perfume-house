@@ -15,7 +15,7 @@ const cleanRun = (row: Record<string, unknown>) => ({
   remaining_urls: Array.isArray(row.queue_urls) ? row.queue_urls.length : 0,
 });
 const escapeXml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
-const publicPagePaths = ["/", "/collection", "/raw-material", "/contact", "/faq", "/shipping", "/returns", "/privacy", "/terms"];
+const publicPagePaths = ["/", "/collection", "/about", "/raw-material", "/contact", "/faq", "/shipping", "/returns", "/privacy", "/terms"];
 const perfumeFamilySku = /^(MAYA-VAR-[A-F0-9]{32})-\d+ML$/i;
 
 type SitemapProductRow = {
@@ -58,7 +58,7 @@ function activeCatalogEntries(rows: SitemapProductRow[], origin: string): Sitema
 
   const perfumeGroups = new Map<string, SitemapProductRow[]>();
   for (const row of rows) {
-    if (row.product_type !== "perfume") continue;
+    if (row.product_type !== "perfume" && row.product_type !== "cosmetic") continue;
     const family = perfumeFamilySku.exec(row.sku ?? "")?.[1]?.toUpperCase();
     const key = family ?? `single:${row.id}`;
     const group = perfumeGroups.get(key) ?? [];
@@ -80,7 +80,7 @@ function activeCatalogEntries(rows: SitemapProductRow[], origin: string): Sitema
 async function readActiveCatalogRows(): Promise<SitemapProductRow[]> {
   const { data, error } = await getSupabaseAdmin().from("products")
     .select("id,legacy_id,source_id,sku,size_ml,product_type,image_url,additional_images")
-    .eq("is_active", true).in("product_type", ["perfume", "raw_material"])
+    .eq("is_active", true).in("product_type", ["perfume", "cosmetic", "raw_material"])
     .order("created_at", { ascending: true }).order("id", { ascending: true }).limit(50_000);
   if (error) throw error;
   return (data ?? []) as SitemapProductRow[];

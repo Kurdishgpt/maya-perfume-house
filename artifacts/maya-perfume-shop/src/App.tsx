@@ -31,44 +31,48 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
 const seoOrigin = 'https://mayacolllection.com';
 const staticSeo: Record<string, { title: string; description: string }> = {
   '/': {
-    title: 'Maya Collection | Luxury Perfumes & Raw Materials',
-    description: 'Discover Maya Collection fragrances and perfumery raw materials. Browse product details, images, and current prices.',
+    title: 'Maya Beauty | Cosmetics & Beauty',
+    description: 'Discover makeup, skincare, face and lip products, beauty tools and everyday essentials at Maya Beauty.',
   },
   '/welcome': {
-    title: 'Maya Collection | Luxury Perfumes & Raw Materials',
-    description: 'Discover Maya Collection fragrances and perfumery raw materials. Browse product details, images, and current prices.',
+    title: 'Maya Beauty | Cosmetics & Beauty',
+    description: 'Discover makeup, skincare, face and lip products, beauty tools and everyday essentials at Maya Beauty.',
   },
   '/collection': {
-    title: 'Perfume Collection | Maya Collection',
-    description: 'Browse Maya Collection perfumes by collection, fragrance family, and bottle size.',
+    title: 'Shop Cosmetics & Beauty | Maya Beauty',
+    description: 'Shop makeup, skincare, foundation, lipstick, eye products, beauty tools, hair care and more at Maya Beauty.',
+  },
+  '/about': {
+    title: 'About Maya Beauty | Cosmetics & Beauty',
+    description: 'Meet Maya Beauty, a Sulaymaniyah cosmetics boutique for makeup, skincare and everyday beauty essentials.',
   },
   '/raw-material': {
-    title: 'Perfumery Raw Materials | Maya Collection',
-    description: 'Explore published perfumery ingredients and raw materials from Maya Collection, with product details and current prices.',
+    title: 'Ingredient Listings | Maya Beauty',
+    description: 'Browse ingredient and supplier listings, with product details and current prices.',
   },
   '/contact': {
-    title: 'Contact Maya Collection',
-    description: 'Contact Maya Collection for store details, customer support, and perfume enquiries.',
+    title: 'Contact Maya Beauty',
+    description: 'Contact Maya Beauty for store information, customer support, product questions and order help.',
   },
   '/faq': {
-    title: 'Frequently Asked Questions | Maya Collection',
-    description: 'Find answers to common Maya Collection questions about perfumes, orders, and customer support.',
+    title: 'Frequently Asked Questions | Maya Beauty',
+    description: 'Find answers about beauty products, orders, delivery and customer support at Maya Beauty.',
   },
   '/shipping': {
-    title: 'Shipping Information | Maya Collection',
-    description: 'Read Maya Collection delivery information and service details.',
+    title: 'Shipping Information | Maya Beauty',
+    description: 'Read Maya Beauty delivery information and service details.',
   },
   '/returns': {
-    title: 'Returns Information | Maya Collection',
-    description: 'Review Maya Collection return and exchange information.',
+    title: 'Returns Information | Maya Beauty',
+    description: 'Review Maya Beauty return and exchange information.',
   },
   '/privacy': {
-    title: 'Privacy Policy | Maya Collection',
-    description: 'Read the Maya Collection privacy policy.',
+    title: 'Privacy Policy | Maya Beauty',
+    description: 'Read the Maya Beauty privacy policy.',
   },
   '/terms': {
-    title: 'Terms of Service | Maya Collection',
-    description: 'Read the Maya Collection terms of service.',
+    title: 'Terms of Service | Maya Beauty',
+    description: 'Read the Maya Beauty terms of service.',
   },
 };
 
@@ -133,7 +137,7 @@ function StoreShell() {
         <Route path="/wishlist" component={Wishlist}/>
         <Route path="/bag" component={Bag}/>
         <Route path="/checkout" component={Checkout}/>
-        <Route path="/about"><Redirect to="/" replace/></Route>
+        <Route path="/about"><InfoPage label="about" titleKey="aboutTitle" bodyKey="aboutBody"/></Route>
         <Route path="/raw-material/:sourceId" component={RawMaterialDetailPage}/>
         <Route path="/raw-material" component={RawMaterialsPage}/>
          <Route path="/contact" component={ContactPage}/>
@@ -199,7 +203,7 @@ function AdminGate() {
   if (status.isError) return <div className="mc-admin-gate"><div className="mc-admin-gate-card"><Crown className="mc-gate-crown"/><h1>Admin access unavailable</h1><p role="alert">The server could not check your access. Please try again.</p><button onClick={() => void status.refetch()} disabled={status.isFetching} data-testid="button-retry-admin-access">{status.isFetching ? 'Checking…' : 'Try again'}</button><Link href="/">Return to storefront</Link></div></div>;
   if (unlocked) return <AdminPanel/>;
   if (recoveryMode) return <div className="mc-admin-gate"><form onSubmit={(e) => void submitRecovery(e)} className="mc-admin-gate-card" data-testid="form-admin-recovery">
-    <Crown className="mc-gate-crown"/><span className="mc-kicker">MAYA COLLECTION · PRIVATE</span><h1>Recover admin access</h1><p>Use the same recovery key saved in Replit Secrets, then set a new administrator password. The key is separate from your admin password.</p>
+    <Crown className="mc-gate-crown"/><span className="mc-kicker">MAYA BEAUTY · PRIVATE</span><h1>Recover admin access</h1><p>Use the same recovery key saved in Replit Secrets, then set a new administrator password. The key is separate from your admin password.</p>
     <label htmlFor="admin-recovery-key"><LockKeyhole size={13}/> Recovery key</label>
     <p className="mc-gate-hint">Enter the exact secret value; it must be at least 32 bytes. A random 64-character value is recommended.</p>
     <input id="admin-recovery-key" type="password" autoComplete="off" required maxLength={256} value={recoveryKey} onChange={(e) => setRecoveryKey(e.target.value)} data-testid="input-admin-recovery-key"/>
@@ -213,7 +217,7 @@ function AdminGate() {
     <Link href="/" data-testid="link-admin-store">Return to storefront</Link>
   </form></div>;
   return <div className="mc-admin-gate"><form onSubmit={submit} className="mc-admin-gate-card">
-    <Crown className="mc-gate-crown"/><span className="mc-kicker">MAYA COLLECTION · PRIVATE</span><h1>Admin access</h1><p>Enter your administrator passcode to continue.</p>
+    <Crown className="mc-gate-crown"/><span className="mc-kicker">MAYA BEAUTY · PRIVATE</span><h1>Admin access</h1><p>Enter your administrator passcode to continue.</p>
     <label htmlFor="admin-passcode"><LockKeyhole size={13}/> Passcode</label>
     <input id="admin-passcode" type="password" autoComplete="current-password" required value={passcode} onChange={(e) => setPasscode(e.target.value)} data-testid="input-admin-passcode"/>
     {error && <p role="alert" className="mc-gate-error">{error}</p>}

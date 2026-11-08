@@ -44,7 +44,7 @@ export default function Checkout() {
     for (const line of cart) {
       const productId = cartLineProductId(line);
       if (!productId) {
-        setOrderError('This fragrance is not linked to the live catalog yet. Refresh the shop and try again.');
+         setOrderError('This product is not linked to the live catalog yet. Refresh the shop and try again.');
         return;
       }
       items.push({ product_id: productId, quantity: line.quantity });
@@ -133,7 +133,7 @@ export default function Checkout() {
       <aside className="mc-bag-side">
         <div className="mc-review-card"><h3>{t('orderSummary')}</h3>
            <ul className="mc-mini-lines">
-              {cart.map((l) => <li key={`${l.product.id}-${l.size}`}><img src={l.product.image_url || '/images/hero-fragrance.png'} alt=""/><span><strong>{l.product.title}</strong><small dir="ltr">{l.size ? `${l.size} ml` : t('sizeUnknown')} x {l.quantity}</small></span><em dir="ltr">{formatMoney(cartLinePrice(l) * l.quantity, l.product.currency)}</em></li>)}
+              {cart.map((l) => <li key={`${l.product.id}-${l.size}`}><img src={l.product.image_url || '/images/beauty-hero.jpg'} alt=""/><span><strong>{l.product.title}</strong><small dir="ltr">{l.size ? `${l.size} ml` : t('sizeUnknown')} x {l.quantity}</small></span><em dir="ltr">{formatMoney(cartLinePrice(l) * l.quantity, l.product.currency)}</em></li>)}
              {rawMaterialCart.map((line) => <li key={`raw-${line.id}`}>
                {line.image_url ? <img src={line.image_url} alt=""/> : <span className="mc-mini-material-icon"><FlaskConical size={18}/></span>}
                <span><strong>{line.name}</strong><small dir="ltr">{line.quantity} {line.unit === 'g' ? 'g' : 'item(s)'} · estimate</small></span>

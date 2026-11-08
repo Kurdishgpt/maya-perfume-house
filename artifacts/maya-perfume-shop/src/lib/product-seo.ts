@@ -13,8 +13,8 @@ export function setProductPageMetadata(input: {
 }) {
   const previousTitle = document.title;
   const cleanup: Array<() => void> = [];
-  const title = `${input.name} | Maya Collection`;
-  const description = (input.description || `Explore ${input.name} at Maya Collection.`)
+  const title = `${input.name} | Maya Beauty`;
+  const description = (input.description || `Explore ${input.name} at Maya Beauty.`)
     .replace(/\s+/g, " ").trim().slice(0, 300);
   let imageUrl: string | undefined;
   if (input.imageUrl?.trim()) {
@@ -95,7 +95,7 @@ export function setProductPageMetadata(input: {
     image: imageUrl ? [imageUrl] : undefined,
     sku: input.sku || undefined,
     category: input.category || undefined,
-    brand: { "@type": "Brand", name: "Maya Collection" },
+    brand: { "@type": "Brand", name: "Maya Beauty" },
     url: input.url,
     offers: offer,
   }).replaceAll("<", "\\u003c");

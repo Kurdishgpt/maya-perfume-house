@@ -17,13 +17,13 @@ export default function Home() {
     <img src="/images/reference/floral-edge.webp" alt="" className="mc-ref-edge is-start" aria-hidden="true"/>
     <img src="/images/reference/floral-edge.webp" alt="" className="mc-ref-edge is-end" aria-hidden="true"/>
     <section className="mc-ref-mast">
-      <h1 dir="ltr" data-testid="text-brand-title">MAYA COLLECTION</h1>
+      <h1 dir="ltr" data-testid="text-brand-title">MAYA BEAUTY</h1>
       <p>{t('brandTagline')}</p>
       <div className="mc-ref-lotus"><span/><Lotus/><span/></div>
     </section>
 
     <section className="mc-ref-hero" aria-labelledby="banner-title">
-      <img src="/images/reference/regal-bottle.webp" alt="MAYA Collection eau de parfum" className="mc-ref-hero-art" dir="ltr"/>
+      <img src="/images/beauty-hero.jpg" alt="Maya Beauty makeup and skincare collection" className="mc-ref-hero-art" dir="ltr"/>
       <div className="mc-ref-hero-copy">
         <span>{t('newArrivals')}</span>
         <h2 id="banner-title">{t('bannerTitle')}</h2>

@@ -14,7 +14,7 @@ export default function InfoPage({ titleKey, bodyKey, label, image }: { titleKey
     <PageBar title={t(label)} onBack={back}/>
     {image && <div className="mc-info-img"><img src={image} alt=""/></div>}
     <section className="mc-info-card">
-      <span className="mc-kicker" dir="ltr">MAYA COLLECTION · SULAYMANIYAH</span>
+      <span className="mc-kicker" dir="ltr">MAYA BEAUTY · SULAYMANIYAH</span>
       <h2>{t(titleKey)}</h2>
       <GoldDivider/>
       <p>{t(bodyKey)}</p>

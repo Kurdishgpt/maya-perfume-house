@@ -67,7 +67,7 @@ export default function AdminContact() {
   };
 
   return <section className="mc-admin-contact" data-testid="admin-contact">
-    <div className="mc-admin-contact-heading"><div><span className="mc-admin-contact-kicker">CUSTOMER CARE · MAYA COLLECTION</span><h1>Inbox &amp; store hours</h1><p>Private enquiries from your customers, and the hours shown on the storefront.</p></div>
+    <div className="mc-admin-contact-heading"><div><span className="mc-admin-contact-kicker">CUSTOMER CARE · MAYA BEAUTY</span><h1>Inbox &amp; store hours</h1><p>Private enquiries from your customers, and the hours shown on the storefront.</p></div>
       <button className="mc-admin-contact-refresh" onClick={() => { void messages.refetch(); void settings.refetch(); }} disabled={messages.isFetching || settings.isFetching} data-testid="button-refresh-contact"><RefreshCw size={15}/>Refresh</button>
     </div>
     <section className="mc-admin-hours">
